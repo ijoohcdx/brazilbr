@@ -39,9 +39,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
   }, []);
 
-  // Listen to Firebase auth state changes
+  // Listen to Firebase auth state changes when the deployment is configured.
   useEffect(() => {
     let isMounted = true;
+
+    if (!isFirebaseConfigured || !auth) {
+      setLoading(false);
+      return () => {
+        isMounted = false;
+      };
+    }
 
     const unsubscribe = onAuthStateChanged(
       auth,
@@ -167,7 +174,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [clearError]);
 
   const refreshProfile = useCallback(async () => {
-    if (!auth.currentUser) return;
+    if (!auth?.currentUser) return;
     try {
       const profile = await getUserProfile(auth.currentUser.uid);
       if (profile) {

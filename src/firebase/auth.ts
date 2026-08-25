@@ -6,7 +6,7 @@ import {
   updateProfile,
   type UserCredential,
 } from 'firebase/auth';
-import { auth, googleProvider } from './config';
+import { googleProvider, requireFirebaseAuth } from './config';
 
 /**
  * Maps raw Firebase Auth errors to friendly, human-readable messages.
@@ -18,6 +18,8 @@ export function getFriendlyAuthErrorMessage(error: unknown): string {
   const code = err.code || '';
 
   switch (code) {
+    case 'auth/configuration-not-found':
+      return 'Firebase Authentication is not configured. Please set your Firebase credentials.';
     case 'auth/popup-closed-by-user':
       return 'Google sign-in was canceled before finishing.';
     case 'auth/popup-blocked':
@@ -57,7 +59,7 @@ export function getFriendlyAuthErrorMessage(error: unknown): string {
  * Sign in using Google Popup
  */
 export async function signInWithGoogle(): Promise<UserCredential> {
-  return await signInWithPopup(auth, googleProvider);
+  return await signInWithPopup(requireFirebaseAuth(), googleProvider);
 }
 
 /**
@@ -68,7 +70,7 @@ export async function signUpWithEmail(
   pass: string,
   displayName?: string
 ): Promise<UserCredential> {
-  const credential = await createUserWithEmailAndPassword(auth, email.trim(), pass);
+  const credential = await createUserWithEmailAndPassword(requireFirebaseAuth(), email.trim(), pass);
   
   if (displayName && displayName.trim() && credential.user) {
     try {
@@ -87,12 +89,12 @@ export async function signUpWithEmail(
  * Sign in with Email and Password
  */
 export async function signInWithEmail(email: string, pass: string): Promise<UserCredential> {
-  return await signInWithEmailAndPassword(auth, email.trim(), pass);
+  return await signInWithEmailAndPassword(requireFirebaseAuth(), email.trim(), pass);
 }
 
 /**
  * Sign out the current user
  */
 export async function logoutUser(): Promise<void> {
-  await signOut(auth);
+  await signOut(requireFirebaseAuth());
 }

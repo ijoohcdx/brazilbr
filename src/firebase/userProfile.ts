@@ -1,6 +1,6 @@
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
-import { db, auth } from './config';
+import { auth, requireFirebaseFirestore } from './config';
 import { OperationType, type FirestoreErrorInfo, type UserProfile } from '../types';
 
 export function handleFirestoreError(
@@ -11,12 +11,12 @@ export function handleFirestoreError(
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData?.map((provider) => ({
+      userId: auth?.currentUser?.uid,
+      email: auth?.currentUser?.email,
+      emailVerified: auth?.currentUser?.emailVerified,
+      isAnonymous: auth?.currentUser?.isAnonymous,
+      tenantId: auth?.currentUser?.tenantId,
+      providerInfo: auth?.currentUser?.providerData?.map((provider) => ({
         providerId: provider.providerId,
         email: provider.email,
       })) || [],
@@ -35,7 +35,7 @@ export function handleFirestoreError(
 export async function syncUserProfile(user: User): Promise<UserProfile> {
   const path = `users/${user.uid}`;
   const nowIso = new Date().toISOString();
-  const userDocRef = doc(db, 'users', user.uid);
+  const userDocRef = doc(requireFirebaseFirestore(), 'users', user.uid);
 
   try {
     const docSnap = await getDoc(userDocRef);
@@ -86,7 +86,7 @@ export async function syncUserProfile(user: User): Promise<UserProfile> {
  */
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   const path = `users/${uid}`;
-  const userDocRef = doc(db, 'users', uid);
+  const userDocRef = doc(requireFirebaseFirestore(), 'users', uid);
   
   try {
     const docSnap = await getDoc(userDocRef);

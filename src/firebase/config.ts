@@ -1,11 +1,10 @@
 /**
  * Firebase App & Service Initialization
  */
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
+import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 
-// Extract environment variables or use safe defaults
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
@@ -16,28 +15,64 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || '',
 };
 
-export const isFirebaseConfigured = Boolean(
-  firebaseConfig.apiKey &&
-  firebaseConfig.projectId &&
-  firebaseConfig.apiKey !== 'MY_FIREBASE_API_KEY' &&
-  !firebaseConfig.apiKey.includes('YOUR_')
-);
+const requiredFirebaseConfigValues = [
+  firebaseConfig.apiKey,
+  firebaseConfig.authDomain,
+  firebaseConfig.projectId,
+  firebaseConfig.storageBucket,
+  firebaseConfig.messagingSenderId,
+  firebaseConfig.appId,
+];
 
-// Lazy or safe initialization
-let app;
-if (getApps().length === 0) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApp();
+const hasUsableValue = (value: string) =>
+  Boolean(value) && value !== 'MY_FIREBASE_API_KEY' && !value.includes('YOUR_');
+
+const hasFirebaseConfig = requiredFirebaseConfigValues.every(hasUsableValue);
+
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
+
+if (hasFirebaseConfig) {
+  try {
+    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+    auth = getAuth(app);
+    db = getFirestore(app);
+  } catch (error) {
+    console.error(
+      'Firebase initialization failed. Check the VITE_FIREBASE_* environment variables.',
+      error,
+    );
+  }
 }
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const isFirebaseConfigured = Boolean(auth && db);
 
-// Configure Google Provider
-export const googleProvider = new GoogleAuthProvider();
+export function requireFirebaseAuth(): Auth {
+  if (!auth) {
+    const error = new Error(
+      'Firebase Authentication is not configured. Set the VITE_FIREBASE_* environment variables.',
+    ) as Error & { code: string };
+    error.code = 'auth/configuration-not-found';
+    throw error;
+  }
+
+  return auth;
+}
+
+export function requireFirebaseFirestore(): Firestore {
+  if (!db) {
+    throw new Error(
+      'Cloud Firestore is not configured. Set the VITE_FIREBASE_* environment variables.',
+    );
+  }
+
+  return db;
+}
+
+const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account',
 });
 
-export { app, firebaseConfig };
+export { app, auth, db, firebaseConfig, googleProvider };
