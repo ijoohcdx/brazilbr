@@ -1,0 +1,46 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account and profile data stored in Firestore",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The unique Firebase Authentication UID"
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's primary email address"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name or nickname"
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL to the user's avatar image"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the account was first created"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the profile was last modified"
+        },
+        "lastLoginAt": {
+          "type": "string",
+          "description": "Timestamp of the user's most recent login"
+        }
+      },
+      "required": ["uid"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "UserProfile",
+      "description": "Private user profile documents keyed by Firebase Auth UID"
+    }
+  }
+}
