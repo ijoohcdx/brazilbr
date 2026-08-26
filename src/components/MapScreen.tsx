@@ -56,11 +56,23 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigate, onOpenPlace, o
     if (!user) return;
     setLoading(true); setError(null);
     try {
-      const [placeItems, mapPeople] = await Promise.all([listPlaces({ city: selectedCity.trim() || undefined }), listMapProfiles(user.uid, selectedCity.trim() || undefined)]);
-      setPlaces(placeItems); setPeople(mapPeople);
-    } catch (loadError) {
-      console.error('Could not load BrazilBR map:', loadError);
-      setError('The map is unavailable right now. Please try again.');
+      const [placesResult, peopleResult] = await Promise.allSettled([
+        listPlaces({ city: selectedCity.trim() || undefined }),
+        listMapProfiles(user.uid, selectedCity.trim() || undefined),
+      ]);
+      const placesLoaded = placesResult.status === 'fulfilled';
+      const peopleLoaded = peopleResult.status === 'fulfilled';
+      setPlaces(placesLoaded ? placesResult.value : []);
+      setPeople(peopleLoaded ? peopleResult.value : []);
+      if (!placesLoaded && !peopleLoaded) {
+        const loadError = placesResult.status === 'rejected' ? placesResult.reason : peopleResult.reason;
+        console.error('Could not load BrazilBR map:', loadError);
+        setError('The map data is unavailable right now. Please try again.');
+      } else if (!placesLoaded || !peopleLoaded) {
+        const partialError = placesResult.status === 'rejected' ? placesResult.reason : peopleResult.status === 'rejected' ? peopleResult.reason : undefined;
+        console.warn('Part of the BrazilBR map data could not be loaded:', partialError);
+        setError('Some map data is temporarily unavailable; showing what we could load.');
+      }
     } finally { setLoading(false); }
   };
 

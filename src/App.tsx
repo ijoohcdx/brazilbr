@@ -75,8 +75,8 @@ const MainApp: React.FC = () => {
     navigate('/home', true);
   };
 
-  if (loading) {
-    return (
+    if (loading || (user && profileLoading)) {
+      return (
       <div className="min-h-screen w-full bg-stone-50 p-6 text-stone-800 flex flex-col items-center justify-center">
         <div className="flex flex-col items-center space-y-4 animate-in fade-in duration-300">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-xl font-bold text-white shadow-md">BR</div>
