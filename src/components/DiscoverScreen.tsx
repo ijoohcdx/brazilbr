@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Compass, Globe2, Loader2, MapPin, RefreshCw, UserRound } from 'lucide-react';
+import { Compass, Globe2, Loader2, MapPin, RefreshCw, Search, UserRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { type PublicUserProfile, listDiscoverableProfiles } from '../firebase/discovery';
 import { getUserContext } from '../firebase/userProfile';
@@ -8,11 +8,12 @@ import { PrimaryNav } from './PrimaryNav';
 
 interface DiscoverScreenProps {
   onOpenProfile: (uid: string) => void;
+  onOpenSearch: () => void;
 }
 
 const initials = (name: string | null) => (name || 'Nomad').trim().slice(0, 1).toUpperCase();
 
-export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({ onOpenProfile }) => {
+export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({ onOpenProfile, onOpenSearch }) => {
   const { user } = useAuth();
   const [profiles, setProfiles] = useState<PublicUserProfile[]>([]);
   const [context, setContext] = useState<UserContext | null>(null);
@@ -47,7 +48,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({ onOpenProfile })
           <h1 className="text-3xl font-extrabold tracking-tight text-stone-900">People like you.</h1>
           <p className="mt-2 text-sm leading-relaxed text-stone-600">Find people who are nearby, curious and open to the same kind of connection.</p>
         </div>
-        <button type="button" aria-label="Refresh discovery" onClick={() => void load()} className="rounded-2xl border border-stone-200 bg-white p-3 text-stone-500 shadow-sm transition hover:text-emerald-700"><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /></button>
+        <div className="flex gap-2"><button type="button" aria-label="Search BrazilBR" onClick={onOpenSearch} className="rounded-2xl border border-stone-200 bg-white p-3 text-stone-500 shadow-sm transition hover:text-emerald-700"><Search className="h-4 w-4" /></button><button type="button" aria-label="Refresh discovery" onClick={() => void load()} className="rounded-2xl border border-stone-200 bg-white p-3 text-stone-500 shadow-sm transition hover:text-emerald-700"><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /></button></div>
       </header>
 
       {context && <div className="mb-5 rounded-2xl border border-emerald-100 bg-emerald-50 p-4"><p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Your current context</p><p className="mt-1 text-sm font-semibold text-emerald-950">{context.currentNeed}</p><p className="mt-1 flex items-center gap-1 text-xs text-emerald-800"><MapPin className="h-3.5 w-3.5" />{context.currentCity || 'Brazil'}</p></div>}

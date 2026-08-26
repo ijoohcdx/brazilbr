@@ -8,10 +8,15 @@ import { ProfileScreen } from './components/ProfileScreen';
 import { MessagesScreen } from './components/MessagesScreen';
 import { ConversationScreen } from './components/ConversationScreen';
 import { MyProfileScreen } from './components/MyProfileScreen';
+import { GroupsScreen } from './components/GroupsScreen';
+import { SearchScreen } from './components/SearchScreen';
+import { ContributionsScreen } from './components/ContributionsScreen';
+import { NotificationsScreen } from './components/NotificationsScreen';
+import { FriendsScreen } from './components/FriendsScreen';
 import { FirebaseSetupBanner } from './components/FirebaseSetupBanner';
 import { Loader2 } from 'lucide-react';
 
-const KNOWN_PATHS = new Set(['/','/home','/onboarding','/discover','/profile','/messages','/conversation']);
+const KNOWN_PATHS = new Set(['/','/home','/onboarding','/discover','/profile','/messages','/conversation','/groups','/search','/contribute','/notifications','/friends']);
 
 const pathnameFrom = (path: string) => new URL(path, window.location.origin).pathname;
 
@@ -91,13 +96,23 @@ const MainApp: React.FC = () => {
       {user && currentPath === '/onboarding' ? (
         <OnboardingScreen onComplete={handleOnboardingComplete} />
       ) : user && currentPath === '/discover' ? (
-        <DiscoverScreen onOpenProfile={(uid) => navigate(`/profile?uid=${encodeURIComponent(uid)}`)} />
+        <DiscoverScreen onOpenProfile={(uid) => navigate(`/profile?uid=${encodeURIComponent(uid)}`)} onOpenSearch={() => navigate('/search')} />
       ) : user && currentPath === '/profile' && profileUid ? (
         <ProfileScreen uid={profileUid} onBack={() => navigate('/discover')} onOpenConversation={(conversationId) => navigate(`/conversation?id=${encodeURIComponent(conversationId)}`)} />
       ) : user && currentPath === '/profile' ? (
         <MyProfileScreen onNavigate={navigate} />
       ) : user && currentPath === '/messages' ? (
         <MessagesScreen onOpenConversation={(conversation) => navigate(`/conversation?id=${encodeURIComponent(conversation.id)}`)} />
+      ) : user && currentPath === '/groups' ? (
+        <GroupsScreen onNavigate={navigate} />
+      ) : user && currentPath === '/search' ? (
+        <SearchScreen onBack={() => navigate('/discover')} onOpenProfile={(uid) => navigate(`/profile?uid=${encodeURIComponent(uid)}`)} />
+      ) : user && currentPath === '/contribute' ? (
+        <ContributionsScreen onBack={() => navigate('/home')} />
+      ) : user && currentPath === '/notifications' ? (
+        <NotificationsScreen onBack={() => navigate('/home')} />
+      ) : user && currentPath === '/friends' ? (
+        <FriendsScreen onBack={() => navigate('/home')} onOpenGroups={() => navigate('/groups')} onOpenProfile={(uid) => navigate(`/profile?uid=${encodeURIComponent(uid)}`)} />
       ) : user && currentPath === '/conversation' && activeConversationId ? (
         <ConversationScreen conversationId={activeConversationId} onBack={() => navigate('/messages')} />
       ) : user && (currentPath === '/' || currentPath === '/home') ? (

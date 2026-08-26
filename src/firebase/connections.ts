@@ -1,7 +1,8 @@
-import { collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, setDoc, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, limit, query, updateDoc, setDoc, where } from 'firebase/firestore';
 import { requireFirebaseFirestore } from './config';
 import { handleFirestoreError } from './userProfile';
 import { OperationType, type Connection, type ConnectionStatus } from '../types';
+import { createNotification } from './notifications';
 
 export function connectionId(firstUid: string, secondUid: string): string {
   return [firstUid, secondUid].sort().join('__');
@@ -31,6 +32,7 @@ export async function createConnection(initiatedBy: string, targetUid: string): 
 
   try {
     await setDoc(doc(requireFirebaseFirestore(), 'connections', id), connection, { merge: false });
+    void createNotification({ recipientId: targetUid, actorId: initiatedBy, type: 'friend-request', entityId: id, text: 'sent you a friend request.' }).catch((notificationError) => console.warn('Could not create friend request notification:', notificationError));
     return connection;
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, `connections/${id}`);
@@ -39,7 +41,7 @@ export async function createConnection(initiatedBy: string, targetUid: string): 
 
 export async function listConnectionsForUser(uid: string): Promise<Connection[]> {
   try {
-    const snapshot = await getDocs(query(collection(requireFirebaseFirestore(), 'connections'), where('users', 'array-contains', uid)));
+    const snapshot = await getDocs(query(collection(requireFirebaseFirestore(), 'connections'), where('users', 'array-contains', uid), limit(100)));
     return snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as Connection));
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, 'connections');
@@ -60,6 +62,10 @@ export async function updateConnectionStatus(
       status,
       updatedAt: new Date().toISOString(),
     });
+    if (status === 'accepted') {
+      const recipientId = connection.users.find((uid) => uid !== actorUid);
+      if (recipientId) void createNotification({ recipientId, actorId: actorUid, type: 'friend-accepted', entityId: connection.id, text: 'accepted your friend request.' }).catch((notificationError) => console.warn('Could not create friend accepted notification:', notificationError));
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `connections/${connection.id}`);
   }

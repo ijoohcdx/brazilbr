@@ -82,6 +82,97 @@ export interface UserReport {
   createdAt: string;
 }
 
+export interface UserGroup {
+  id: string;
+  ownerId: string;
+  name: string;
+  memberIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PostVisibility = 'public' | 'friends';
+
+export interface Post {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorPhotoURL: string | null;
+  content: string;
+  city: string;
+  linkUrl: string | null;
+  mediaUrl: string | null;
+  visibility: PostVisibility;
+  reactionCount: number;
+  commentCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PostComment {
+  id: string;
+  postId: string;
+  authorId: string;
+  authorName: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface PostReaction {
+  id: string;
+  postId: string;
+  userId: string;
+  createdAt: string;
+}
+
+export type NotificationType = 'friend-request' | 'friend-accepted' | 'message' | 'comment' | 'reaction';
+
+export interface UserNotification {
+  id: string;
+  recipientId: string;
+  actorId: string;
+  type: NotificationType;
+  entityId: string;
+  text: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export const CONTRIBUTION_TYPES = [
+  'place',
+  'restaurant',
+  'hotel',
+  'event',
+  'job',
+  'accommodation',
+  'local-tip',
+  'guide',
+  'photo',
+  'video',
+  'service',
+  'other',
+] as const;
+
+export type ContributionType = (typeof CONTRIBUTION_TYPES)[number];
+export type ContributionStatus = 'published' | 'draft';
+
+export interface Contribution {
+  id: string;
+  authorId: string;
+  type: ContributionType;
+  title: string;
+  description: string;
+  location: string;
+  city: string;
+  country: string;
+  media: string[];
+  links: string[];
+  metadata: Record<string, string>;
+  status: ContributionStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type AuthMode = 'welcome' | 'email-signin' | 'email-signup';
 
 export enum OperationType {

@@ -1,7 +1,8 @@
-import { addDoc, collection, doc, getDoc, getDocs, orderBy, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, limit, orderBy, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { requireFirebaseFirestore } from './config';
 import { handleFirestoreError } from './userProfile';
 import { OperationType, type Conversation, type Message } from '../types';
+import { createNotification } from './notifications';
 
 export function conversationId(firstUid: string, secondUid: string): string {
   return [firstUid, secondUid].sort().join('__');
@@ -41,7 +42,7 @@ export async function getConversation(id: string): Promise<Conversation | null> 
 
 export async function listConversations(uid: string): Promise<Conversation[]> {
   try {
-    const snapshot = await getDocs(query(collection(requireFirebaseFirestore(), 'conversations'), where('participants', 'array-contains', uid)));
+    const snapshot = await getDocs(query(collection(requireFirebaseFirestore(), 'conversations'), where('participants', 'array-contains', uid), limit(50)));
     return snapshot.docs
       .map((item) => ({ id: item.id, ...item.data() } as Conversation))
       .sort((left, right) => right.lastMessageAt.localeCompare(left.lastMessageAt));
@@ -52,7 +53,7 @@ export async function listConversations(uid: string): Promise<Conversation[]> {
 
 export async function listMessages(conversation: Conversation): Promise<Message[]> {
   try {
-    const snapshot = await getDocs(query(collection(requireFirebaseFirestore(), 'conversations', conversation.id, 'messages'), orderBy('createdAt', 'asc')));
+    const snapshot = await getDocs(query(collection(requireFirebaseFirestore(), 'conversations', conversation.id, 'messages'), orderBy('createdAt', 'asc'), limit(100)));
     return snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as Message));
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, `conversations/${conversation.id}/messages`);
@@ -80,6 +81,8 @@ export async function sendMessage(conversation: Conversation, senderId: string, 
       lastMessageAt: now,
       updatedAt: now,
     });
+    const recipientId = conversation.participants.find((uid) => uid !== senderId);
+    if (recipientId) void createNotification({ recipientId, actorId: senderId, type: 'message', entityId: conversation.id, text: 'sent you a new message.' }).catch((notificationError) => console.warn('Could not create message notification:', notificationError));
     return { id: messageRef.id, ...messageData };
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, `conversations/${conversation.id}/messages`);
