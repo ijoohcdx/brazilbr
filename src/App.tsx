@@ -3,10 +3,14 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { HomeScreen } from './components/HomeScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
+import { DiscoverScreen } from './components/DiscoverScreen';
+import { ProfileScreen } from './components/ProfileScreen';
 import { FirebaseSetupBanner } from './components/FirebaseSetupBanner';
 import { Loader2 } from 'lucide-react';
 
-const KNOWN_PATHS = new Set(['/','/home','/onboarding']);
+const KNOWN_PATHS = new Set(['/','/home','/onboarding','/discover','/profile']);
+
+const pathnameFrom = (path: string) => new URL(path, window.location.origin).pathname;
 
 const MainApp: React.FC = () => {
   const { user, userProfile, loading, refreshProfile } = useAuth();
@@ -21,7 +25,7 @@ const MainApp: React.FC = () => {
     } else {
       window.history.pushState(null, '', path);
     }
-    setCurrentPath(path);
+    setCurrentPath(pathnameFrom(path));
   };
 
   useEffect(() => {
@@ -53,6 +57,8 @@ const MainApp: React.FC = () => {
     }
   }, [user, userProfile, loading, currentPath]);
 
+  const profileUid = new URLSearchParams(window.location.search).get('uid');
+
   const handleOnboardingComplete = async () => {
     await refreshProfile();
     navigate('/home', true);
@@ -81,8 +87,12 @@ const MainApp: React.FC = () => {
       <FirebaseSetupBanner />
       {user && currentPath === '/onboarding' ? (
         <OnboardingScreen onComplete={handleOnboardingComplete} />
+      ) : user && currentPath === '/discover' ? (
+        <DiscoverScreen onOpenProfile={(uid) => navigate(`/profile?uid=${encodeURIComponent(uid)}`)} />
+      ) : user && currentPath === '/profile' && profileUid ? (
+        <ProfileScreen uid={profileUid} onBack={() => navigate('/discover')} />
       ) : user && currentPath === '/home' ? (
-        <HomeScreen />
+        <HomeScreen onNavigate={navigate} />
       ) : (
         <WelcomeScreen />
       )}

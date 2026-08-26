@@ -10,9 +10,14 @@ import {
   Loader2,
   CheckCircle2,
   User as UserIcon,
+  House,
 } from 'lucide-react';
 
-export const HomeScreen: React.FC = () => {
+interface HomeScreenProps {
+  onNavigate?: (path: string) => void;
+}
+
+export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
   const { userProfile, user, logout, actionLoading } = useAuth();
 
   // Extract first name cleanly
@@ -155,6 +160,11 @@ export const HomeScreen: React.FC = () => {
           </div>
         </section>
       </main>
+
+      <nav className="mb-4 grid grid-cols-2 gap-2 rounded-2xl border border-stone-200/80 bg-white/90 p-1.5 shadow-xs" aria-label="Primary navigation">
+        <button type="button" onClick={() => onNavigate?.('/home')} className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-bold text-white"><House className="h-4 w-4" />Home</button>
+        <button type="button" onClick={() => onNavigate?.('/discover')} className="flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold text-stone-600 transition hover:bg-emerald-50 hover:text-emerald-700"><Compass className="h-4 w-4" />Discover</button>
+      </nav>
 
       {/* Footer / Primary Sign Out Action */}
       <footer className="pt-4">
