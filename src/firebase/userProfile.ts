@@ -120,7 +120,7 @@ export async function saveUserProfile(
   const path = `users/${uid}`;
   const now = new Date().toISOString();
   try {
-    await setDoc(doc(requireFirebaseFirestore(), 'users', uid), { ...data, updatedAt: now, lastActiveAt: now }, { merge: true });
+    await setDoc(doc(requireFirebaseFirestore(), 'users', uid), { uid, ...data, updatedAt: now, lastActiveAt: now }, { merge: true });
     await setDoc(doc(requireFirebaseFirestore(), 'publicProfiles', uid), publicProfileData({ uid, ...data, updatedAt: now }), { merge: true });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
