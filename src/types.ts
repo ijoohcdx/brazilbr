@@ -45,6 +45,17 @@ export interface UserContext {
   updatedAt: string;
 }
 
+export type ConnectionStatus = 'pending' | 'accepted' | 'declined' | 'blocked';
+
+export interface Connection {
+  id: string;
+  users: [string, string];
+  initiatedBy: string;
+  status: ConnectionStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type AuthMode = 'welcome' | 'email-signin' | 'email-signup';
 
 export enum OperationType {
