@@ -1,4 +1,4 @@
-import { deleteDoc, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, setDoc, where } from 'firebase/firestore';
 import { requireFirebaseFirestore } from './config';
 import { handleFirestoreError } from './userProfile';
 import { OperationType, type Connection, type ConnectionStatus } from '../types';
@@ -34,6 +34,15 @@ export async function createConnection(initiatedBy: string, targetUid: string): 
     return connection;
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, `connections/${id}`);
+  }
+}
+
+export async function listConnectionsForUser(uid: string): Promise<Connection[]> {
+  try {
+    const snapshot = await getDocs(query(collection(requireFirebaseFirestore(), 'connections'), where('users', 'array-contains', uid)));
+    return snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as Connection));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, 'connections');
   }
 }
 

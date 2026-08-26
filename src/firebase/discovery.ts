@@ -1,6 +1,7 @@
 import { collection, doc, getDoc, getDocs, limit, query } from 'firebase/firestore';
 import { requireFirebaseFirestore } from './config';
 import { handleFirestoreError } from './userProfile';
+import { listConnectionsForUser } from './connections';
 import { OperationType, type UserContext, type UserProfile } from '../types';
 
 export type PublicUserProfile = Pick<
@@ -49,21 +50,25 @@ function scoreProfile(profile: PublicUserProfile, currentUserId: string, context
 
 export async function listDiscoverableProfiles(currentUserId: string, context: UserContext | null): Promise<PublicUserProfile[]> {
   try {
-    const snapshot = await getDocs(query(collection(requireFirebaseFirestore(), 'users'), limit(50)));
+    const [snapshot, connections] = await Promise.all([
+      getDocs(query(collection(requireFirebaseFirestore(), 'publicProfiles'), limit(50))),
+      listConnectionsForUser(currentUserId),
+    ]);
+    const blockedUserIds = new Set(connections.filter((connection) => connection.status === 'blocked').flatMap((connection) => connection.users.filter((uid) => uid !== currentUserId)));
     return snapshot.docs
       .map((item) => toPublicProfile(item.data()))
-      .filter((profile): profile is PublicUserProfile => profile !== null && profile.uid !== currentUserId)
+      .filter((profile): profile is PublicUserProfile => profile !== null && profile.uid !== currentUserId && !blockedUserIds.has(profile.uid))
       .sort((left, right) => scoreProfile(right, currentUserId, context) - scoreProfile(left, currentUserId, context));
   } catch (error) {
-    handleFirestoreError(error, OperationType.LIST, 'users');
+    handleFirestoreError(error, OperationType.LIST, 'publicProfiles');
   }
 }
 
 export async function getDiscoverableProfile(uid: string): Promise<PublicUserProfile | null> {
   try {
-    const snapshot = await getDoc(doc(requireFirebaseFirestore(), 'users', uid));
+    const snapshot = await getDoc(doc(requireFirebaseFirestore(), 'publicProfiles', uid));
     return snapshot.exists() ? toPublicProfile(snapshot.data()) : null;
   } catch (error) {
-    handleFirestoreError(error, OperationType.GET, `users/${uid}`);
+    handleFirestoreError(error, OperationType.GET, `publicProfiles/${uid}`);
   }
 }

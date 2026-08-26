@@ -74,6 +74,14 @@ export interface Message {
   readAt: string | null;
 }
 
+export interface UserReport {
+  id: string;
+  reporterId: string;
+  reportedUserId: string;
+  reason: string;
+  createdAt: string;
+}
+
 export type AuthMode = 'welcome' | 'email-signin' | 'email-signup';
 
 export enum OperationType {

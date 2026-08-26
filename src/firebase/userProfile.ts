@@ -50,11 +50,31 @@ function profileFromData(data: Partial<UserProfile>, user: User, nowIso: string)
   };
 }
 
-/** Creates or updates the authenticated user's profile while preserving onboarding data. */
+function publicProfileData(profile: Partial<UserProfile>) {
+  return {
+    uid: profile.uid,
+    displayName: profile.displayName ?? null,
+    photoURL: profile.photoURL ?? null,
+    bio: profile.bio ?? '',
+    homeCountry: profile.homeCountry ?? '',
+    currentCountry: profile.currentCountry ?? 'Brazil',
+    currentCity: profile.currentCity ?? '',
+    languages: profile.languages ?? [],
+    interests: profile.interests ?? [],
+    travelStatus: profile.travelStatus ?? null,
+    travelStyle: profile.travelStyle ?? null,
+    onboardingCompleted: profile.onboardingCompleted ?? false,
+    updatedAt: profile.updatedAt ?? new Date().toISOString(),
+  };
+}
+
+/** Creates or updates the authenticated user's private profile and its public projection. */
 export async function syncUserProfile(user: User): Promise<UserProfile> {
   const path = `users/${user.uid}`;
   const nowIso = new Date().toISOString();
-  const userDocRef = doc(requireFirebaseFirestore(), 'users', user.uid);
+  const firestore = requireFirebaseFirestore();
+  const userDocRef = doc(firestore, 'users', user.uid);
+  const publicDocRef = doc(firestore, 'publicProfiles', user.uid);
 
   try {
     const docSnap = await getDoc(userDocRef);
@@ -74,37 +94,34 @@ export async function syncUserProfile(user: User): Promise<UserProfile> {
       await setDoc(userDocRef, profile);
     }
 
+    await setDoc(publicDocRef, publicProfileData(profile), { merge: true });
     return profile;
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
 }
 
-/** Fetches the user profile from Firestore by UID. */
+/** Fetches the private profile from Firestore by UID. */
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   const path = `users/${uid}`;
-  const userDocRef = doc(requireFirebaseFirestore(), 'users', uid);
-
   try {
-    const docSnap = await getDoc(userDocRef);
+    const docSnap = await getDoc(doc(requireFirebaseFirestore(), 'users', uid));
     return docSnap.exists() ? (docSnap.data() as UserProfile) : null;
   } catch (error) {
     handleFirestoreError(error, OperationType.GET, path);
   }
 }
 
-/** Saves only public/profile onboarding fields owned by the current user. */
+/** Saves private profile fields and updates a public projection without copying the email. */
 export async function saveUserProfile(
   uid: string,
   data: Partial<Pick<UserProfile, 'displayName' | 'bio' | 'homeCountry' | 'currentCountry' | 'currentCity' | 'languages' | 'interests' | 'travelStatus' | 'travelStyle' | 'onboardingCompleted'>>
 ): Promise<void> {
   const path = `users/${uid}`;
+  const now = new Date().toISOString();
   try {
-    await setDoc(
-      doc(requireFirebaseFirestore(), 'users', uid),
-      { ...data, updatedAt: new Date().toISOString(), lastActiveAt: new Date().toISOString() },
-      { merge: true }
-    );
+    await setDoc(doc(requireFirebaseFirestore(), 'users', uid), { ...data, updatedAt: now, lastActiveAt: now }, { merge: true });
+    await setDoc(doc(requireFirebaseFirestore(), 'publicProfiles', uid), publicProfileData({ uid, ...data, updatedAt: now }), { merge: true });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
   }
@@ -120,19 +137,9 @@ export async function getUserContext(uid: string): Promise<UserContext | null> {
   }
 }
 
-export async function saveUserContext(
-  uid: string,
-  currentNeed: string,
-  currentCity: string
-): Promise<UserContext> {
+export async function saveUserContext(uid: string, currentNeed: string, currentCity: string): Promise<UserContext> {
   const path = `userContext/${uid}`;
-  const context: UserContext = {
-    uid,
-    currentNeed,
-    currentCity,
-    updatedAt: new Date().toISOString(),
-  };
-
+  const context: UserContext = { uid, currentNeed, currentCity, updatedAt: new Date().toISOString() };
   try {
     await setDoc(doc(requireFirebaseFirestore(), 'userContext', uid), context, { merge: true });
     return context;
