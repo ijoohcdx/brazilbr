@@ -65,6 +65,7 @@ function profileFromData(data: Partial<UserProfile>, user: User, nowIso: string)
     updatedAt: nowIso,
     lastLoginAt: nowIso,
     lastActiveAt: nowIso,
+    showOnMap: data.showOnMap ?? false,
   };
 }
 
@@ -82,6 +83,7 @@ function publicProfileData(profile: Partial<UserProfile>) {
     travelStatus: profile.travelStatus ?? null,
     travelStyle: profile.travelStyle ?? null,
     onboardingCompleted: profile.onboardingCompleted ?? false,
+    showOnMap: profile.showOnMap ?? false,
     updatedAt: profile.updatedAt ?? new Date().toISOString(),
   };
 }
@@ -133,7 +135,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 /** Saves private profile fields and updates a public projection without copying the email. */
 export async function saveUserProfile(
   uid: string,
-  data: Partial<Pick<UserProfile, 'displayName' | 'bio' | 'homeCountry' | 'currentCountry' | 'currentCity' | 'languages' | 'interests' | 'travelStatus' | 'travelStyle' | 'onboardingCompleted'>>
+  data: Partial<Pick<UserProfile, 'displayName' | 'bio' | 'homeCountry' | 'currentCountry' | 'currentCity' | 'languages' | 'interests' | 'travelStatus' | 'travelStyle' | 'onboardingCompleted' | 'showOnMap'>>
 ): Promise<void> {
   const path = `users/${uid}`;
   const now = new Date().toISOString();

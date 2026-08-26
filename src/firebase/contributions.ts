@@ -37,6 +37,7 @@ export interface ContributionInput {
   media?: string[];
   links?: string[];
   metadata?: Record<string, string>;
+  placeId?: string | null;
   status?: 'published' | 'draft';
 }
 
@@ -60,6 +61,7 @@ export async function createContribution(input: ContributionInput): Promise<Cont
     media: input.media || [],
     links: input.links || [],
     metadata: input.metadata || {},
+    placeId: input.placeId || null,
     status: input.status || 'published',
     createdAt: now,
     updatedAt: now,
@@ -73,7 +75,7 @@ export async function createContribution(input: ContributionInput): Promise<Cont
   }
 }
 
-export async function updateContribution(id: string, patch: Partial<Pick<Contribution, 'type' | 'title' | 'description' | 'location' | 'city' | 'country' | 'media' | 'links' | 'metadata' | 'status'>>): Promise<void> {
+export async function updateContribution(id: string, patch: Partial<Pick<Contribution, 'type' | 'title' | 'description' | 'location' | 'city' | 'country' | 'media' | 'links' | 'metadata' | 'placeId' | 'status'>>): Promise<void> {
   try {
     await updateDoc(doc(requireFirebaseFirestore(), 'contributions', id), { ...patch, updatedAt: new Date().toISOString() });
   } catch (error) {

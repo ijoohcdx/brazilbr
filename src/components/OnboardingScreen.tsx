@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, MapPin, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, MapPin, MapPinned, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { saveUserContext, saveUserProfile } from '../firebase/userProfile';
 import { USER_NEEDS } from '../types';
@@ -17,6 +17,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
   const [displayName, setDisplayName] = useState(userProfile?.displayName || user?.displayName || '');
   const [homeCountry, setHomeCountry] = useState(userProfile?.homeCountry || '');
   const [currentCity, setCurrentCity] = useState(userProfile?.currentCity || '');
+  const [showOnMap, setShowOnMap] = useState(userProfile?.showOnMap ?? false);
   const [languages, setLanguages] = useState<string[]>(userProfile?.languages || []);
   const [interests, setInterests] = useState<string[]>(userProfile?.interests || []);
   const [travelStatus, setTravelStatus] = useState(userProfile?.travelStatus || '');
@@ -56,6 +57,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
         homeCountry: homeCountry.trim(),
         currentCountry: 'Brazil',
         currentCity: currentCity.trim(),
+        showOnMap,
         languages,
         interests,
         travelStatus: travelStatus || null,
@@ -122,6 +124,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
                 <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-stone-500"><MapPin className="h-3.5 w-3.5 text-emerald-600" />Current city in Brazil</span>
                 <input value={currentCity} onChange={(event) => setCurrentCity(event.target.value)} placeholder="e.g. Fortaleza" className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
               </label>
+              <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-stone-200 bg-white p-4"><input type="checkbox" checked={showOnMap} onChange={(event) => setShowOnMap(event.target.checked)} className="mt-0.5 h-4 w-4 accent-emerald-600" /><span><span className="flex items-center gap-1.5 text-sm font-bold text-stone-900"><MapPinned className="h-4 w-4 text-emerald-600" />Show me on the BrazilBR map</span><span className="mt-1 block text-xs leading-relaxed text-stone-500">Only your city will be shown. Your precise location is never shared.</span></span></label>
             </div>
           )}
 

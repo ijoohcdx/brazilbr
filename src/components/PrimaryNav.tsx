@@ -1,16 +1,16 @@
 import React from 'react';
-import { Compass, House, MessageCircle, UserRound, UsersRound } from 'lucide-react';
+import { Compass, House, Map, MessageCircle, UserRound } from 'lucide-react';
 
 interface PrimaryNavProps {
-  active: 'home' | 'discover' | 'messages' | 'profile' | 'groups';
+  active: 'home' | 'map' | 'discover' | 'messages' | 'profile' | 'groups';
   onNavigate: (path: string) => void;
 }
 
 const items = [
   { id: 'home' as const, label: 'Home', path: '/home', icon: House },
+  { id: 'map' as const, label: 'Map', path: '/map', icon: Map },
   { id: 'discover' as const, label: 'Discover', path: '/discover', icon: Compass },
   { id: 'messages' as const, label: 'Messages', path: '/messages', icon: MessageCircle },
-  { id: 'groups' as const, label: 'Groups', path: '/groups', icon: UsersRound },
   { id: 'profile' as const, label: 'Profile', path: '/profile', icon: UserRound },
 ];
 

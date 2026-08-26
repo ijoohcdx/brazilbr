@@ -17,6 +17,7 @@ export type PublicUserProfile = Pick<
   | 'interests'
   | 'travelStatus'
   | 'travelStyle'
+  | 'showOnMap'
 >;
 
 function toPublicProfile(data: Record<string, unknown>): PublicUserProfile | null {
@@ -33,6 +34,7 @@ function toPublicProfile(data: Record<string, unknown>): PublicUserProfile | nul
     interests: Array.isArray(data.interests) ? data.interests.filter((value): value is string => typeof value === 'string') : [],
     travelStatus: typeof data.travelStatus === 'string' ? data.travelStatus : null,
     travelStyle: typeof data.travelStyle === 'string' ? data.travelStyle : null,
+    showOnMap: data.showOnMap === true,
   };
 }
 
@@ -62,6 +64,11 @@ export async function listDiscoverableProfiles(currentUserId: string, context: U
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, 'publicProfiles');
   }
+}
+
+export async function listMapProfiles(currentUserId: string, city?: string): Promise<PublicUserProfile[]> {
+  const profiles = await listDiscoverableProfiles(currentUserId, null);
+  return profiles.filter((profile) => profile.showOnMap && (!city || profile.currentCity.toLowerCase() === city.trim().toLowerCase()));
 }
 
 export async function getDiscoverableProfile(uid: string): Promise<PublicUserProfile | null> {

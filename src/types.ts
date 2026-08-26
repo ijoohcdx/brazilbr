@@ -21,6 +21,7 @@ export interface UserProfile {
   updatedAt: string;
   lastLoginAt: string;
   lastActiveAt: string;
+  showOnMap?: boolean;
 }
 
 export const USER_NEEDS = [
@@ -102,6 +103,7 @@ export interface Post {
   city: string;
   linkUrl: string | null;
   mediaUrl: string | null;
+  placeId?: string | null;
   visibility: PostVisibility;
   reactionCount: number;
   commentCount: number;
@@ -141,10 +143,18 @@ export interface UserNotification {
 export const CONTRIBUTION_TYPES = [
   'place',
   'restaurant',
+  'hostel',
   'hotel',
+  'cafe',
+  'coworking',
+  'bar',
   'event',
   'job',
   'accommodation',
+  'attraction',
+  'shop',
+  'wifi',
+  'camping',
   'local-tip',
   'guide',
   'photo',
@@ -155,6 +165,64 @@ export const CONTRIBUTION_TYPES = [
 
 export type ContributionType = (typeof CONTRIBUTION_TYPES)[number];
 export type ContributionStatus = 'published' | 'draft';
+
+export const PLACE_CATEGORIES = [
+  'restaurant', 'hostel', 'hotel', 'cafe', 'coworking', 'bar', 'accommodation',
+  'event', 'job', 'attraction', 'shop', 'service', 'wifi', 'camping', 'other',
+] as const;
+
+export type PlaceCategory = (typeof PLACE_CATEGORIES)[number];
+
+export interface Place {
+  id: string;
+  name: string;
+  category: PlaceCategory;
+  description: string;
+  address: string;
+  city: string;
+  country: string;
+  latitude: number | null;
+  longitude: number | null;
+  phone: string;
+  whatsapp: string;
+  website: string;
+  mapsUrl: string;
+  instagramUrl: string;
+  bookingUrl: string;
+  hostelworldUrl: string;
+  reservationUrl: string;
+  openingHours: string;
+  priceRange: string;
+  roomTypes: string;
+  amenities: string[];
+  services: string[];
+  media: string[];
+  wifiAvailable: boolean | null;
+  breakfast: boolean | null;
+  checkIn: string;
+  checkOut: string;
+  menuUrl: string;
+  ticketUrl: string;
+  applicationUrl: string;
+  contact: string;
+  claimedBy: string | null;
+  verified: boolean;
+  verificationStatus: 'unverified' | 'pending' | 'verified';
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlaceContribution {
+  id: string;
+  placeId: string;
+  authorId: string;
+  kind: 'recommendation' | 'correction' | 'photo' | 'menu' | 'tip' | 'wifi' | 'review';
+  text: string;
+  media: string[];
+  metadata: Record<string, string>;
+  createdAt: string;
+}
 
 export interface Contribution {
   id: string;
@@ -168,6 +236,7 @@ export interface Contribution {
   media: string[];
   links: string[];
   metadata: Record<string, string>;
+  placeId?: string | null;
   status: ContributionStatus;
   createdAt: string;
   updatedAt: string;

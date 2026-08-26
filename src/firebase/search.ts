@@ -3,7 +3,7 @@ import { requireFirebaseFirestore } from './config';
 import { handleFirestoreError } from './userProfile';
 import { OperationType } from '../types';
 
-export type SearchResultType = 'person' | 'contribution' | 'post';
+export type SearchResultType = 'person' | 'place' | 'contribution' | 'post';
 
 export interface SearchResult {
   id: string;
@@ -12,6 +12,7 @@ export interface SearchResult {
   subtitle: string;
   description: string;
   authorId?: string;
+  placeId?: string;
   category?: string;
 }
 
@@ -42,8 +43,9 @@ export async function searchAcrossBrazilBR(term: string, currentUid: string): Pr
 
   try {
     const firestore = requireFirebaseFirestore();
-    const [profilesSnapshot, contributionsSnapshot, postsSnapshot] = await Promise.all([
+    const [profilesSnapshot, placesSnapshot, contributionsSnapshot, postsSnapshot] = await Promise.all([
       getDocs(query(collection(firestore, 'publicProfiles'), limit(100))),
+      getDocs(query(collection(firestore, 'places'), limit(100))),
       getDocs(query(collection(firestore, 'contributions'), where('status', '==', 'published'), limit(100))),
       getDocs(query(collection(firestore, 'posts'), where('visibility', '==', 'public'), limit(100))),
     ]);
@@ -59,6 +61,18 @@ export async function searchAcrossBrazilBR(term: string, currentUid: string): Pr
         description: String(data.bio || 'Open to meeting people and sharing local discoveries.'),
       }));
 
+    const places = placesSnapshot.docs
+      .map((item) => ({ id: item.id, ...item.data() } as Record<string, unknown>))
+      .filter((data) => matches(data, normalized))
+      .map((data) => ({
+        id: String(data.id),
+        type: 'place' as const,
+        title: String(data.name || 'BrazilBR place'),
+        subtitle: `${String(data.category || 'place')} · ${String(data.city || 'Brazil')}`,
+        description: String(data.description || ''),
+        category: String(data.category || 'other'),
+      }));
+
     const contributions = contributionsSnapshot.docs
       .map((item) => ({ id: item.id, ...item.data() } as Record<string, unknown>))
       .filter((data) => matches(data, normalized))
@@ -69,6 +83,7 @@ export async function searchAcrossBrazilBR(term: string, currentUid: string): Pr
         subtitle: String(data.category || data.type || data.city || 'Contribution'),
         description: String(data.summary || data.description || ''),
         authorId: String(data.authorId || data.ownerId || ''),
+        placeId: data.placeId ? String(data.placeId) : undefined,
         category: String(data.category || data.type || ''),
       }));
 
@@ -84,7 +99,7 @@ export async function searchAcrossBrazilBR(term: string, currentUid: string): Pr
         authorId: String(data.authorId || ''),
       }));
 
-    return [...people, ...contributions, ...posts].slice(0, 50);
+    return [...people, ...places, ...contributions, ...posts].slice(0, 50);
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, 'search');
   }
