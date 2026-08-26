@@ -25,6 +25,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   clearError: () => void;
   refreshProfile: () => Promise<void>;
+  completeOnboarding: (data: Partial<UserProfile>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -178,6 +179,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [clearError]);
 
+  const completeOnboarding = useCallback((data: Partial<UserProfile>) => {
+    if (!user) return;
+    const now = new Date().toISOString();
+    setUserProfile((currentProfile) => ({
+      ...fallbackProfile(user),
+      ...currentProfile,
+      ...data,
+      uid: user.uid,
+      email: user.email ?? currentProfile?.email ?? null,
+      photoURL: user.photoURL ?? currentProfile?.photoURL ?? null,
+      onboardingCompleted: true,
+      updatedAt: now,
+      lastActiveAt: now,
+    }));
+    setProfileLoading(false);
+  }, [user]);
+
   const refreshProfile = useCallback(async () => {
     if (!auth?.currentUser) return;
     setProfileLoading(true);
@@ -205,8 +223,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logout,
       clearError,
       refreshProfile,
+      completeOnboarding,
     }),
-    [user, userProfile, loading, profileLoading, actionLoading, error, loginWithGoogle, loginWithEmail, registerWithEmail, logout, clearError, refreshProfile]
+    [user, userProfile, loading, profileLoading, actionLoading, error, loginWithGoogle, loginWithEmail, registerWithEmail, logout, clearError, refreshProfile, completeOnboarding]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

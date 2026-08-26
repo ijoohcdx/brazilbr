@@ -16,7 +16,7 @@ const KNOWN_PATHS = new Set(['/','/home','/onboarding','/discover','/profile','/
 const pathnameFrom = (path: string) => new URL(path, window.location.origin).pathname;
 
 const MainApp: React.FC = () => {
-  const { user, userProfile, loading, profileLoading, refreshProfile } = useAuth();
+  const { user, userProfile, loading, profileLoading } = useAuth();
   const [currentPath, setCurrentPath] = useState<string>(() => {
     const path = window.location.pathname;
     return KNOWN_PATHS.has(path) ? path : '/';
@@ -63,8 +63,7 @@ const MainApp: React.FC = () => {
   const profileUid = new URLSearchParams(window.location.search).get('uid');
   const activeConversationId = new URLSearchParams(window.location.search).get('id');
 
-  const handleOnboardingComplete = async () => {
-    await refreshProfile();
+  const handleOnboardingComplete = () => {
     navigate('/home', true);
   };
 

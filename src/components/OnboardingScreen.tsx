@@ -12,7 +12,7 @@ interface OnboardingScreenProps {
 }
 
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, completeOnboarding } = useAuth();
   const [step, setStep] = useState(1);
   const [displayName, setDisplayName] = useState(userProfile?.displayName || user?.displayName || '');
   const [homeCountry, setHomeCountry] = useState(userProfile?.homeCountry || '');
@@ -50,7 +50,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
     setSaving(true);
     setError(null);
     try {
-      await saveUserProfile(user.uid, {
+      const profileData = {
         displayName: displayName.trim(),
         bio: bio.trim(),
         homeCountry: homeCountry.trim(),
@@ -60,9 +60,11 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
         interests,
         travelStatus: travelStatus || null,
         travelStyle: travelStyle || null,
-        onboardingCompleted: true,
-      });
+        onboardingCompleted: true as const,
+      };
+      await saveUserProfile(user.uid, profileData);
       await saveUserContext(user.uid, currentNeed, currentCity.trim());
+      completeOnboarding(profileData);
       onComplete();
     } catch (saveError) {
       console.error('Onboarding save failed:', saveError);

@@ -3,6 +3,24 @@ import type { User } from 'firebase/auth';
 import { auth, requireFirebaseFirestore } from './config';
 import { OperationType, type FirestoreErrorInfo, type UserContext, type UserProfile } from '../types';
 
+const FIRESTORE_WRITE_TIMEOUT_MS = 15000;
+
+function withFirestoreTimeout<T>(operation: Promise<T>, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${FIRESTORE_WRITE_TIMEOUT_MS / 1000} seconds.`)), FIRESTORE_WRITE_TIMEOUT_MS);
+    operation.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 export function handleFirestoreError(
   error: unknown,
   operationType: OperationType,
@@ -120,8 +138,14 @@ export async function saveUserProfile(
   const path = `users/${uid}`;
   const now = new Date().toISOString();
   try {
-    await setDoc(doc(requireFirebaseFirestore(), 'users', uid), { uid, ...data, updatedAt: now, lastActiveAt: now }, { merge: true });
-    await setDoc(doc(requireFirebaseFirestore(), 'publicProfiles', uid), publicProfileData({ uid, ...data, updatedAt: now }), { merge: true });
+    await withFirestoreTimeout(
+      setDoc(doc(requireFirebaseFirestore(), 'users', uid), { uid, ...data, updatedAt: now, lastActiveAt: now }, { merge: true }),
+      'Saving your private profile',
+    );
+    await withFirestoreTimeout(
+      setDoc(doc(requireFirebaseFirestore(), 'publicProfiles', uid), publicProfileData({ uid, ...data, updatedAt: now }), { merge: true }),
+      'Saving your public profile',
+    );
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
   }
@@ -141,7 +165,10 @@ export async function saveUserContext(uid: string, currentNeed: string, currentC
   const path = `userContext/${uid}`;
   const context: UserContext = { uid, currentNeed, currentCity, updatedAt: new Date().toISOString() };
   try {
-    await setDoc(doc(requireFirebaseFirestore(), 'userContext', uid), context, { merge: true });
+    await withFirestoreTimeout(
+      setDoc(doc(requireFirebaseFirestore(), 'userContext', uid), context, { merge: true }),
+      'Saving your current context',
+    );
     return context;
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
