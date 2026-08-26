@@ -1,8 +1,6 @@
-import { doc, getDoc, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
-import type { User } from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc, writeBatch } from '@firebase/firestore';
+import type { User } from '@firebase/auth';
 import { auth, requireFirebaseFirestore } from './config';
-import { deleteMedia } from './media';
-import type { MediaReference } from '../types';
 import { OperationType, type FirestoreErrorInfo, type UserContext, type UserProfile } from '../types';
 
 const FIRESTORE_WRITE_TIMEOUT_MS = 15000;
@@ -53,8 +51,7 @@ function profileFromData(data: Partial<UserProfile>, user: User, nowIso: string)
     uid: user.uid,
     email: user.email ?? data.email ?? null,
     displayName: user.displayName ?? data.displayName ?? (user.email ? user.email.split('@')[0] : null),
-    photoURL: data.profileMediaPath ? data.photoURL ?? null : user.photoURL ?? data.photoURL ?? null,
-    profileMediaPath: data.profileMediaPath,
+    photoURL: data.photoURL ?? user.photoURL ?? null,
     bio: data.bio ?? '',
     homeCountry: data.homeCountry ?? '',
     currentCountry: data.currentCountry ?? 'Brazil',
@@ -156,21 +153,16 @@ export async function saveUserProfile(
   }
 }
 
-export async function saveProfilePhoto(uid: string, media: MediaReference): Promise<void> {
+export async function saveProfilePhotoURL(uid: string, photoURL: string): Promise<void> {
   const userDocRef = doc(requireFirebaseFirestore(), 'users', uid);
   const publicDocRef = doc(requireFirebaseFirestore(), 'publicProfiles', uid);
-  let previousPath: string | undefined;
+  const now = new Date().toISOString();
   try {
-    const existing = await getDoc(userDocRef);
-    previousPath = (existing.data() as Partial<UserProfile> | undefined)?.profileMediaPath;
-    const now = new Date().toISOString();
     const batch = writeBatch(requireFirebaseFirestore());
-    batch.set(userDocRef, { uid, photoURL: media.downloadURL, profileMediaPath: media.path, updatedAt: now, lastActiveAt: now }, { merge: true });
-    batch.set(publicDocRef, { uid, photoURL: media.downloadURL, updatedAt: now }, { merge: true });
-    await withFirestoreTimeout(batch.commit(), 'Saving your profile photo');
-    if (previousPath && previousPath !== media.path) await deleteMedia({ path: previousPath }).catch((deleteError) => console.warn('Could not delete previous profile media:', deleteError));
+    batch.set(userDocRef, { uid, photoURL, updatedAt: now, lastActiveAt: now }, { merge: true });
+    batch.set(publicDocRef, { uid, photoURL, updatedAt: now }, { merge: true });
+    await withFirestoreTimeout(batch.commit(), 'Saving your external profile photo');
   } catch (error) {
-    await deleteMedia(media).catch((deleteError) => console.warn('Could not clean up failed profile media:', deleteError));
     handleFirestoreError(error, OperationType.UPDATE, `users/${uid}/profile`);
   }
 }

@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, limit, query, setDoc, where } from 'firebase/firestore';
+import { collection, doc, getDocs, limit, query, setDoc, where } from '@firebase/firestore';
 import { requireFirebaseFirestore } from './config';
 import { handleFirestoreError } from './userProfile';
 import { OperationType, type UserGroup } from '../types';

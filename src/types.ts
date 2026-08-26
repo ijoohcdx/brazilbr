@@ -8,7 +8,6 @@ export interface UserProfile {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  profileMediaPath?: string;
   bio: string;
   homeCountry: string;
   currentCountry: string;
@@ -104,7 +103,7 @@ export interface Post {
   city: string;
   linkUrl: string | null;
   mediaUrl: string | null;
-  media?: MediaReference[];
+  media?: MediaEntry[];
   placeId?: string | null;
   visibility: PostVisibility;
   reactionCount: number;
@@ -142,19 +141,14 @@ export interface UserNotification {
   createdAt: string;
 }
 
-export type MediaKind = 'image' | 'video';
-export type MediaOwner = 'profile' | 'post' | 'contribution' | 'place';
+export type MediaKind = 'image' | 'video' | 'menu' | 'website' | 'other';
 
 export interface MediaReference {
   id: string;
-  path: string;
-  downloadURL: string;
-  contentType: string;
-  kind: MediaKind;
-  size: number;
-  authorId: string;
-  owner: MediaOwner;
-  associatedId?: string;
+  externalUrl: string;
+  type: MediaKind;
+  caption?: string;
+  contributorId: string;
   createdAt: string;
 }
 

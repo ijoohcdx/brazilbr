@@ -10,13 +10,12 @@ import {
   setDoc,
   updateDoc,
   where,
-} from 'firebase/firestore';
+} from '@firebase/firestore';
 import { requireFirebaseFirestore } from './config';
 import { handleFirestoreError } from './userProfile';
 import { OperationType, type Post, type PostComment, type PostReaction, type PostVisibility } from '../types';
 import { createNotification } from './notifications';
-import { deleteMedia } from './media';
-import type { MediaReference } from '../types';
+import type { MediaEntry, MediaReference } from '../types';
 
 export async function listFeedPosts(): Promise<Post[]> {
   try {
@@ -49,7 +48,7 @@ export async function createPost(
   city: string,
   visibility: PostVisibility = 'public',
   linkUrl: string | null = null,
-  media: MediaReference[] = [],
+  media: MediaEntry[] = [],
 ): Promise<Post> {
   const cleanContent = content.trim();
   if (!cleanContent) throw new Error('Post content cannot be empty.');
@@ -152,22 +151,20 @@ export async function addPostComment(postId: string, authorId: string, authorNam
   }
 }
 
-export async function attachPostMedia(postId: string, media: MediaReference[]): Promise<void> {
+export async function addPostMediaReferences(postId: string, media: MediaReference[]): Promise<void> {
   if (media.length === 0) return;
   try {
     await updateDoc(doc(requireFirebaseFirestore(), 'posts', postId), { media, updatedAt: new Date().toISOString() });
   } catch (error) {
-    await Promise.allSettled(media.map((item) => deleteMedia(item)));
     handleFirestoreError(error, OperationType.UPDATE, `posts/${postId}/media`);
   }
 }
 
-export async function removePostMedia(post: Post, mediaId: string): Promise<void> {
-  const media = (post.media || []).filter((item) => item.id !== mediaId);
-  const removed = (post.media || []).find((item) => item.id === mediaId);
-  if (!removed) return;
+export async function removePostMediaReference(post: Post, mediaId: string): Promise<void> {
+  const media = (post.media || []).filter((item) => typeof item === 'string' || item.id !== mediaId);
+  const removed = (post.media || []).find((item) => typeof item !== 'string' && item.id === mediaId);
+  if (!removed || typeof removed === 'string') return;
   try {
-    await deleteMedia(removed);
     await updateDoc(doc(requireFirebaseFirestore(), 'posts', post.id), { media, updatedAt: new Date().toISOString() });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `posts/${post.id}/media`);

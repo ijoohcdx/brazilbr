@@ -1,8 +1,7 @@
-import { collection, deleteDoc, doc, getDocs, limit, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, limit, query, setDoc, updateDoc, where } from '@firebase/firestore';
 import { requireFirebaseFirestore } from './config';
 import { handleFirestoreError } from './userProfile';
 import { OperationType, type Contribution, type ContributionType, type MediaReference, type MediaEntry } from '../types';
-import { deleteMedia } from './media';
 
 export async function listContributions(): Promise<Contribution[]> {
   try {
@@ -76,22 +75,20 @@ export async function createContribution(input: ContributionInput): Promise<Cont
   }
 }
 
-export async function attachContributionMedia(id: string, media: MediaReference[]): Promise<void> {
+export async function addContributionMediaReferences(id: string, media: MediaReference[]): Promise<void> {
   if (media.length === 0) return;
   try {
     await updateDoc(doc(requireFirebaseFirestore(), 'contributions', id), { media, updatedAt: new Date().toISOString() });
   } catch (error) {
-    await Promise.allSettled(media.map((item) => deleteMedia(item)));
     handleFirestoreError(error, OperationType.UPDATE, `contributions/${id}/media`);
   }
 }
 
-export async function removeContributionMedia(contribution: Contribution, mediaId: string): Promise<void> {
-  const media = (contribution.media || []).filter((item) => typeof item !== 'string' && item.id !== mediaId);
+export async function removeContributionMediaReference(contribution: Contribution, mediaId: string): Promise<void> {
+  const media = (contribution.media || []).filter((item) => typeof item === 'string' || item.id !== mediaId);
   const removed = (contribution.media || []).find((item) => typeof item !== 'string' && item.id === mediaId);
   if (!removed || typeof removed === 'string') return;
   try {
-    if (removed.owner !== 'place') await deleteMedia(removed);
     await updateDoc(doc(requireFirebaseFirestore(), 'contributions', contribution.id), { media, updatedAt: new Date().toISOString() });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `contributions/${contribution.id}/media`);
@@ -108,9 +105,7 @@ export async function updateContribution(id: string, patch: Partial<Pick<Contrib
 
 export async function deleteContribution(contribution: Contribution): Promise<void> {
   try {
-    const media = (contribution.media || []).filter((item): item is MediaReference => typeof item !== 'string' && item.owner !== 'place');
     await deleteDoc(doc(requireFirebaseFirestore(), 'contributions', contribution.id));
-    await Promise.allSettled(media.map((item) => deleteMedia(item)));
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, `contributions/${contribution.id}`);
   }

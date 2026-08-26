@@ -17,6 +17,54 @@ service cloud.firestore {
       return isSignedIn() && data.users is list && request.auth.uid in data.users;
     }
 
+    function validExternalURL(value) {
+      return value is string &&
+        value.size() > 0 &&
+        value.size() <= 2000 &&
+        value.matches('^https?://.*');
+    }
+
+    function validExternalMediaEntry(entry) {
+      return entry is map &&
+        entry.id is string &&
+        entry.id.size() <= 100 &&
+        validExternalURL(entry.externalUrl) &&
+        entry.type in ['image', 'video', 'menu', 'website', 'other'] &&
+        entry.contributorId is string &&
+        entry.contributorId.size() <= 128 &&
+        entry.createdAt is string;
+    }
+
+    function validExternalMediaList(entries) {
+      return entries is list &&
+        entries.size() <= 10 &&
+        (entries.size() == 0 || validExternalMediaEntry(entries[0])) &&
+        (entries.size() <= 1 || validExternalMediaEntry(entries[1])) &&
+        (entries.size() <= 2 || validExternalMediaEntry(entries[2])) &&
+        (entries.size() <= 3 || validExternalMediaEntry(entries[3])) &&
+        (entries.size() <= 4 || validExternalMediaEntry(entries[4])) &&
+        (entries.size() <= 5 || validExternalMediaEntry(entries[5])) &&
+        (entries.size() <= 6 || validExternalMediaEntry(entries[6])) &&
+        (entries.size() <= 7 || validExternalMediaEntry(entries[7])) &&
+        (entries.size() <= 8 || validExternalMediaEntry(entries[8])) &&
+        (entries.size() <= 9 || validExternalMediaEntry(entries[9]));
+    }
+
+    function validExternalLinkList(links) {
+      return links is list &&
+        links.size() <= 10 &&
+        (links.size() == 0 || validExternalURL(links[0])) &&
+        (links.size() <= 1 || validExternalURL(links[1])) &&
+        (links.size() <= 2 || validExternalURL(links[2])) &&
+        (links.size() <= 3 || validExternalURL(links[3])) &&
+        (links.size() <= 4 || validExternalURL(links[4])) &&
+        (links.size() <= 5 || validExternalURL(links[5])) &&
+        (links.size() <= 6 || validExternalURL(links[6])) &&
+        (links.size() <= 7 || validExternalURL(links[7])) &&
+        (links.size() <= 8 || validExternalURL(links[8])) &&
+        (links.size() <= 9 || validExternalURL(links[9]));
+    }
+
     function validProfile(data) {
       return data.uid is string &&
         data.uid == request.auth.uid &&
@@ -44,7 +92,6 @@ service cloud.firestore {
         (!('email' in data) || data.email == null || (data.email is string && data.email.size() <= 256)) &&
         (!('displayName' in data) || data.displayName == null || (data.displayName is string && data.displayName.size() <= 120)) &&
         (!('photoURL' in data) || data.photoURL == null || (data.photoURL is string && data.photoURL.size() <= 1024)) &&
-        (!('profileMediaPath' in data) || (data.profileMediaPath is string && data.profileMediaPath.size() <= 512)) &&
         (!('bio' in data) || (data.bio is string && data.bio.size() <= 500)) &&
         (!('homeCountry' in data) || (data.homeCountry is string && data.homeCountry.size() <= 120)) &&
         (!('currentCountry' in data) || (data.currentCountry is string && data.currentCountry.size() <= 120)) &&
@@ -163,8 +210,7 @@ service cloud.firestore {
         request.resource.data.city.size() <= 120 &&
         request.resource.data.country is string &&
         request.resource.data.country.size() <= 120 &&
-        request.resource.data.media is list &&
-        request.resource.data.media.size() <= 10 &&
+        validExternalMediaList(request.resource.data.media) &&
         (request.resource.data.latitude == null || request.resource.data.latitude is number) &&
         (request.resource.data.longitude == null || request.resource.data.longitude is number) &&
         request.resource.data.claimedBy == null &&
@@ -182,19 +228,15 @@ service cloud.firestore {
       match /media/{mediaId} {
         allow get, list: if isSignedIn();
         allow create: if isSignedIn() &&
+          request.resource.data.id == mediaId &&
           request.resource.data.placeId == placeId &&
-          request.resource.data.authorId == request.auth.uid &&
-          request.resource.data.owner == 'place' &&
-          request.resource.data.contentType in ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'] &&
-          request.resource.data.size is int &&
-          request.resource.data.size <= 52428800 &&
-          request.resource.data.downloadURL is string &&
-          request.resource.data.path is string &&
-          request.resource.data.createdAt is string;
-        allow update: if isSignedIn() && resource.data.authorId == request.auth.uid &&
-          request.resource.data.authorId == resource.data.authorId &&
-          request.resource.data.placeId == resource.data.placeId;
-        allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+          request.resource.data.contributorId == request.auth.uid &&
+          validExternalMediaEntry(request.resource.data);
+        allow update: if isSignedIn() && resource.data.contributorId == request.auth.uid &&
+          request.resource.data.id == resource.data.id &&
+          request.resource.data.placeId == resource.data.placeId &&
+          request.resource.data.contributorId == resource.data.contributorId;
+        allow delete: if isSignedIn() && resource.data.contributorId == request.auth.uid;
       }
 
       match /placeContributions/{placeContributionId} {
@@ -206,8 +248,7 @@ service cloud.firestore {
           request.resource.data.text is string &&
           request.resource.data.text.size() > 0 &&
           request.resource.data.text.size() <= 2000 &&
-          request.resource.data.media is list &&
-          request.resource.data.media.size() <= 10 &&
+          validExternalMediaList(request.resource.data.media) &&
           request.resource.data.metadata is map &&
           request.resource.data.createdAt is string;
         allow update: if isSignedIn() && resource.data.authorId == request.auth.uid &&
@@ -229,10 +270,9 @@ service cloud.firestore {
         request.resource.data.content.size() <= 5000 &&
         request.resource.data.city is string &&
         request.resource.data.city.size() <= 120 &&
-        request.resource.data.media is list &&
+        validExternalMediaList(request.resource.data.media) &&
         request.resource.data.media.size() <= 4 &&
-        (request.resource.data.linkUrl == null ||
-          (request.resource.data.linkUrl is string && request.resource.data.linkUrl.size() <= 2000)) &&
+        (request.resource.data.linkUrl == null || validExternalURL(request.resource.data.linkUrl)) &&
         request.resource.data.mediaUrl == null &&
         request.resource.data.visibility in ['public', 'friends'] &&
         request.resource.data.reactionCount is int &&
@@ -289,10 +329,8 @@ service cloud.firestore {
         (request.resource.data.placeId == null || request.resource.data.placeId is string) &&
         request.resource.data.country is string &&
         request.resource.data.country.size() <= 120 &&
-        request.resource.data.media is list &&
-        request.resource.data.media.size() <= 10 &&
-        request.resource.data.links is list &&
-        request.resource.data.links.size() <= 10 &&
+        validExternalMediaList(request.resource.data.media) &&
+        validExternalLinkList(request.resource.data.links) &&
         request.resource.data.metadata is map &&
         request.resource.data.status in ['published', 'draft'] &&
         request.resource.data.createdAt is string &&

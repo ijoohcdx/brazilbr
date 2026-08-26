@@ -5,7 +5,7 @@ import {
   signOut,
   updateProfile,
   type UserCredential,
-} from 'firebase/auth';
+} from '@firebase/auth';
 import { googleProvider, requireFirebaseAuth } from './config';
 
 /**

@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, limit, query } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, limit, query } from '@firebase/firestore';
 import { requireFirebaseFirestore } from './config';
 import { handleFirestoreError } from './userProfile';
 import { listConnectionsForUser } from './connections';

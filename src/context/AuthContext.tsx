@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import { onAuthStateChanged, type User } from '@firebase/auth';
 import { auth, isFirebaseConfigured } from '../firebase/config';
 import {
   signInWithGoogle as authSignInWithGoogle,

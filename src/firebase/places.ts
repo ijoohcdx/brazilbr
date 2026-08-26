@@ -1,8 +1,7 @@
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, updateDoc, where } from '@firebase/firestore';
 import { requireFirebaseFirestore } from './config';
 import { handleFirestoreError } from './userProfile';
 import { OperationType, type MediaEntry, type MediaReference, type Place, type PlaceCategory, type PlaceContribution } from '../types';
-import { deleteMedia } from './media';
 
 const asText = (value: string | undefined | null) => value?.trim() || '';
 
@@ -63,7 +62,7 @@ const toPlace = (id: string, data: Record<string, unknown>): Place => ({
   roomTypes: String(data.roomTypes || ''),
   amenities: Array.isArray(data.amenities) ? data.amenities.map(String) : [],
   services: Array.isArray(data.services) ? data.services.map(String) : [],
-  media: Array.isArray(data.media) ? data.media.filter((entry): entry is MediaEntry => typeof entry === 'string' || (typeof entry === 'object' && entry !== null && typeof (entry as { downloadURL?: unknown }).downloadURL === 'string')) : [],
+  media: Array.isArray(data.media) ? data.media.filter((entry): entry is MediaEntry => typeof entry === 'string' || (typeof entry === 'object' && entry !== null && typeof (entry as { externalUrl?: unknown }).externalUrl === 'string')) : [],
   wifiAvailable: typeof data.wifiAvailable === 'boolean' ? data.wifiAvailable : null,
   breakfast: typeof data.breakfast === 'boolean' ? data.breakfast : null,
   checkIn: String(data.checkIn || ''),
@@ -181,36 +180,26 @@ export async function listPlaceContributions(placeId: string): Promise<PlaceCont
 
 export async function listPlaceMedia(placeId: string): Promise<MediaReference[]> {
   try {
-    const snapshot = await getDocs(query(collection(requireFirebaseFirestore(), 'places', placeId, 'media'), orderBy('createdAt', 'desc'), limit(20)));
+    const snapshot = await getDocs(query(collection(requireFirebaseFirestore(), 'places', placeId, 'media'), orderBy('createdAt', 'desc'), limit(50)));
     return snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as MediaReference));
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, `places/${placeId}/media`);
   }
 }
 
-export async function cleanupPlaceMediaReferences(placeId: string, media: MediaReference[]): Promise<void> {
-  const firestore = requireFirebaseFirestore();
-  await Promise.allSettled(media.map((item) => deleteDoc(doc(firestore, 'places', placeId, 'media', item.id))));
-  await Promise.allSettled(media.map((item) => deleteMedia(item)));
-}
-
-export async function attachPlaceMedia(placeId: string, media: MediaReference[]): Promise<void> {
+export async function addPlaceMediaReferences(placeId: string, media: MediaReference[]): Promise<void> {
   if (media.length === 0) return;
-  const firestore = requireFirebaseFirestore();
-  const references = media.map((item) => ({ ...item, owner: 'place' as const, associatedId: placeId }));
   try {
-    await Promise.all(references.map((item) => setDoc(doc(firestore, 'places', placeId, 'media', item.id), { ...item, placeId })));
+    await Promise.all(media.map((item) => setDoc(doc(requireFirebaseFirestore(), 'places', placeId, 'media', item.id), { ...item, placeId })));
   } catch (error) {
-    await cleanupPlaceMediaReferences(placeId, references);
     handleFirestoreError(error, OperationType.CREATE, `places/${placeId}/media`);
   }
 }
 
-export async function removePlaceMedia(placeId: string, media: MediaReference, actorId: string): Promise<void> {
-  if (media.authorId !== actorId) throw new Error('Only the media contributor can remove this file.');
+export async function removePlaceMediaReference(placeId: string, media: MediaReference, actorId: string): Promise<void> {
+  if (media.contributorId !== actorId) throw new Error('Only the media contributor can remove this reference.');
   try {
     await deleteDoc(doc(requireFirebaseFirestore(), 'places', placeId, 'media', media.id));
-    await deleteMedia(media);
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, `places/${placeId}/media/${media.id}`);
   }
