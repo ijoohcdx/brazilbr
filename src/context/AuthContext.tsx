@@ -15,6 +15,7 @@ interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
   loading: boolean;
+  profileLoading: boolean;
   actionLoading: 'google' | 'email-signin' | 'email-signup' | 'logout' | null;
   error: string | null;
   isConfigured: boolean;
@@ -28,23 +29,45 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function fallbackProfile(user: User): UserProfile {
+  const now = new Date().toISOString();
+  return {
+    uid: user.uid,
+    email: user.email,
+    displayName: user.displayName || (user.email ? user.email.split('@')[0] : 'Nomad'),
+    photoURL: user.photoURL,
+    bio: '',
+    homeCountry: '',
+    currentCountry: 'Brazil',
+    currentCity: '',
+    languages: [],
+    interests: [],
+    travelStatus: null,
+    travelStyle: null,
+    onboardingCompleted: false,
+    createdAt: now,
+    updatedAt: now,
+    lastLoginAt: now,
+    lastActiveAt: now,
+  };
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<'google' | 'email-signin' | 'email-signup' | 'logout' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
+  const clearError = useCallback(() => setError(null), []);
 
-  // Listen to Firebase auth state changes when the deployment is configured.
   useEffect(() => {
     let isMounted = true;
 
     if (!isFirebaseConfigured || !auth) {
       setLoading(false);
+      setProfileLoading(false);
       return () => {
         isMounted = false;
       };
@@ -52,57 +75,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const unsubscribe = onAuthStateChanged(
       auth,
-      async (firebaseUser) => {
+      (firebaseUser) => {
         if (!isMounted) return;
 
-        if (firebaseUser) {
-          setUser(firebaseUser);
-          try {
-            // Sync/fetch Firestore user profile
-            const profile = await syncUserProfile(firebaseUser);
-            if (isMounted) {
-              setUserProfile(profile);
-            }
-          } catch (profileErr) {
-            console.error('Failed to sync profile on auth state change:', profileErr);
-            // Fallback profile representation if Firestore permissions or offline
-            if (isMounted) {
-              const fallbackNow = new Date().toISOString();
-              setUserProfile({
-                uid: firebaseUser.uid,
-                email: firebaseUser.email,
-                displayName: firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'Nomad'),
-                photoURL: firebaseUser.photoURL,
-                bio: '',
-                homeCountry: '',
-                currentCountry: 'Brazil',
-                currentCity: '',
-                languages: [],
-                interests: [],
-                travelStatus: null,
-                travelStyle: null,
-                onboardingCompleted: false,
-                createdAt: fallbackNow,
-                updatedAt: fallbackNow,
-                lastLoginAt: fallbackNow,
-                lastActiveAt: fallbackNow,
-              });
-            }
-          }
-        } else {
-          setUser(null);
+        setUser(firebaseUser);
+        setLoading(false);
+
+        if (!firebaseUser) {
           setUserProfile(null);
+          setProfileLoading(false);
+          return;
         }
 
-        if (isMounted) {
-          setLoading(false);
-        }
+        setUserProfile(fallbackProfile(firebaseUser));
+        setProfileLoading(true);
+
+        void syncUserProfile(firebaseUser)
+          .then((profile) => {
+            if (isMounted && auth.currentUser?.uid === firebaseUser.uid) {
+              setUserProfile(profile);
+            }
+          })
+          .catch((profileErr) => {
+            console.error('Failed to sync profile after auth state change:', profileErr);
+          })
+          .finally(() => {
+            if (isMounted && auth.currentUser?.uid === firebaseUser.uid) {
+              setProfileLoading(false);
+            }
+          });
       },
       (authError) => {
         console.error('onAuthStateChanged error:', authError);
         if (isMounted) {
           setError(getFriendlyAuthErrorMessage(authError));
           setLoading(false);
+          setProfileLoading(false);
         }
       }
     );
@@ -117,11 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     clearError();
     setActionLoading('google');
     try {
-      const cred = await authSignInWithGoogle();
-      if (cred.user) {
-        const profile = await syncUserProfile(cred.user);
-        setUserProfile(profile);
-      }
+      await authSignInWithGoogle();
       return true;
     } catch (err) {
       setError(getFriendlyAuthErrorMessage(err));
@@ -135,11 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     clearError();
     setActionLoading('email-signin');
     try {
-      const cred = await authSignInWithEmail(email, pass);
-      if (cred.user) {
-        const profile = await syncUserProfile(cred.user);
-        setUserProfile(profile);
-      }
+      await authSignInWithEmail(email, pass);
       return true;
     } catch (err) {
       setError(getFriendlyAuthErrorMessage(err));
@@ -149,26 +149,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [clearError]);
 
-  const registerWithEmail = useCallback(
-    async (email: string, pass: string, name?: string): Promise<boolean> => {
-      clearError();
-      setActionLoading('email-signup');
-      try {
-        const cred = await authSignUpWithEmail(email, pass, name);
-        if (cred.user) {
-          const profile = await syncUserProfile(cred.user);
-          setUserProfile(profile);
-        }
-        return true;
-      } catch (err) {
-        setError(getFriendlyAuthErrorMessage(err));
-        return false;
-      } finally {
-        setActionLoading(null);
-      }
-    },
-    [clearError]
-  );
+  const registerWithEmail = useCallback(async (email: string, pass: string, name?: string): Promise<boolean> => {
+    clearError();
+    setActionLoading('email-signup');
+    try {
+      await authSignUpWithEmail(email, pass, name);
+      return true;
+    } catch (err) {
+      setError(getFriendlyAuthErrorMessage(err));
+      return false;
+    } finally {
+      setActionLoading(null);
+    }
+  }, [clearError]);
 
   const logout = useCallback(async () => {
     clearError();
@@ -177,6 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await logoutUser();
       setUser(null);
       setUserProfile(null);
+      setProfileLoading(false);
     } catch (err) {
       setError(getFriendlyAuthErrorMessage(err));
     } finally {
@@ -186,11 +180,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshProfile = useCallback(async () => {
     if (!auth?.currentUser) return;
+    setProfileLoading(true);
     try {
-      const profile = await getUserProfile(auth.currentUser.uid);
-      setUserProfile(profile);
+      setUserProfile(await getUserProfile(auth.currentUser.uid));
     } catch (err) {
       console.warn('Could not refresh profile:', err);
+    } finally {
+      setProfileLoading(false);
     }
   }, []);
 
@@ -199,6 +195,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user,
       userProfile,
       loading,
+      profileLoading,
       actionLoading,
       error,
       isConfigured: isFirebaseConfigured,
@@ -209,19 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clearError,
       refreshProfile,
     }),
-    [
-      user,
-      userProfile,
-      loading,
-      actionLoading,
-      error,
-      loginWithGoogle,
-      loginWithEmail,
-      registerWithEmail,
-      logout,
-      clearError,
-      refreshProfile,
-    ]
+    [user, userProfile, loading, profileLoading, actionLoading, error, loginWithGoogle, loginWithEmail, registerWithEmail, logout, clearError, refreshProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -229,8 +214,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };

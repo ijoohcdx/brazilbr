@@ -7,6 +7,7 @@ import { DiscoverScreen } from './components/DiscoverScreen';
 import { ProfileScreen } from './components/ProfileScreen';
 import { MessagesScreen } from './components/MessagesScreen';
 import { ConversationScreen } from './components/ConversationScreen';
+import { MyProfileScreen } from './components/MyProfileScreen';
 import { FirebaseSetupBanner } from './components/FirebaseSetupBanner';
 import { Loader2 } from 'lucide-react';
 
@@ -15,7 +16,7 @@ const KNOWN_PATHS = new Set(['/','/home','/onboarding','/discover','/profile','/
 const pathnameFrom = (path: string) => new URL(path, window.location.origin).pathname;
 
 const MainApp: React.FC = () => {
-  const { user, userProfile, loading, refreshProfile } = useAuth();
+  const { user, userProfile, loading, profileLoading, refreshProfile } = useAuth();
   const [currentPath, setCurrentPath] = useState<string>(() => {
     const path = window.location.pathname;
     return KNOWN_PATHS.has(path) ? path : '/';
@@ -47,7 +48,7 @@ const MainApp: React.FC = () => {
       return;
     }
 
-    if (!userProfile) return;
+    if (!userProfile || profileLoading) return;
 
     if (!userProfile.onboardingCompleted && currentPath !== '/onboarding') {
       navigate('/onboarding', true);
@@ -57,7 +58,7 @@ const MainApp: React.FC = () => {
     if (userProfile.onboardingCompleted && (currentPath === '/' || currentPath === '/onboarding')) {
       navigate('/home', true);
     }
-  }, [user, userProfile, loading, currentPath]);
+  }, [user, userProfile, loading, profileLoading, currentPath]);
 
   const profileUid = new URLSearchParams(window.location.search).get('uid');
   const activeConversationId = new URLSearchParams(window.location.search).get('id');
@@ -94,11 +95,13 @@ const MainApp: React.FC = () => {
         <DiscoverScreen onOpenProfile={(uid) => navigate(`/profile?uid=${encodeURIComponent(uid)}`)} />
       ) : user && currentPath === '/profile' && profileUid ? (
         <ProfileScreen uid={profileUid} onBack={() => navigate('/discover')} onOpenConversation={(conversationId) => navigate(`/conversation?id=${encodeURIComponent(conversationId)}`)} />
+      ) : user && currentPath === '/profile' ? (
+        <MyProfileScreen onNavigate={navigate} />
       ) : user && currentPath === '/messages' ? (
         <MessagesScreen onOpenConversation={(conversation) => navigate(`/conversation?id=${encodeURIComponent(conversation.id)}`)} />
       ) : user && currentPath === '/conversation' && activeConversationId ? (
         <ConversationScreen conversationId={activeConversationId} onBack={() => navigate('/messages')} />
-      ) : user && currentPath === '/home' ? (
+      ) : user && (currentPath === '/' || currentPath === '/home') ? (
         <HomeScreen onNavigate={navigate} />
       ) : (
         <WelcomeScreen />

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { type PublicUserProfile, listDiscoverableProfiles } from '../firebase/discovery';
 import { getUserContext } from '../firebase/userProfile';
 import type { UserContext } from '../types';
+import { PrimaryNav } from './PrimaryNav';
 
 interface DiscoverScreenProps {
   onOpenProfile: (uid: string) => void;
@@ -56,6 +57,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({ onOpenProfile })
       {!loading && !error && profiles.length === 0 && <div className="rounded-3xl border border-dashed border-stone-300 bg-white p-7 text-center"><UserRound className="mx-auto h-8 w-8 text-stone-400" /><h2 className="mt-3 font-bold text-stone-900">You are early.</h2><p className="mt-2 text-sm leading-relaxed text-stone-600">There are no other completed profiles to show yet. Check back soon or invite a friend.</p></div>}
 
       {!loading && profiles.length > 0 && <div className="space-y-3">{profiles.map((profile) => <button key={profile.uid} type="button" onClick={() => onOpenProfile(profile.uid)} className="w-full rounded-3xl border border-stone-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md"><div className="flex gap-3"><div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-emerald-100 text-lg font-bold text-emerald-800">{profile.photoURL ? <img src={profile.photoURL} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : initials(profile.displayName)}</div><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h2 className="truncate font-bold text-stone-900">{profile.displayName || 'BrazilBR member'}</h2><span className="text-xs font-semibold text-emerald-700">View</span></div><p className="mt-1 flex items-center gap-1 text-xs text-stone-500"><MapPin className="h-3.5 w-3.5 text-emerald-600" />{profile.currentCity || 'Brazil'}{profile.homeCountry ? ` · from ${profile.homeCountry}` : ''}</p><p className="mt-2 line-clamp-2 text-sm leading-relaxed text-stone-600">{profile.bio || 'Open to meeting people and sharing local discoveries.'}</p></div></div><div className="mt-3 flex flex-wrap gap-1.5">{profile.languages.slice(0, 3).map((language) => <span key={language} className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-1 text-[11px] font-semibold text-stone-600"><Globe2 className="h-3 w-3" />{language}</span>)}{profile.interests.slice(0, 3).map((interest) => <span key={interest} className="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-800">{interest}</span>)}</div></button>)}</div>}
+      <footer className="mt-7"><PrimaryNav active="discover" onNavigate={(path) => { window.history.pushState(null, '', path); window.dispatchEvent(new PopStateEvent('popstate')); }} /></footer>
     </div>
   );
 };

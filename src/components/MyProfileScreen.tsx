@@ -1,0 +1,16 @@
+import React from 'react';
+import { Edit3, LogOut, MapPin, UserRound } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { PrimaryNav } from './PrimaryNav';
+
+interface MyProfileScreenProps {
+  onNavigate: (path: string) => void;
+}
+
+export const MyProfileScreen: React.FC<MyProfileScreenProps> = ({ onNavigate }) => {
+  const { user, userProfile, logout, actionLoading } = useAuth();
+  const name = userProfile?.displayName || user?.displayName || 'Nomad Explorer';
+  const photoURL = userProfile?.photoURL || user?.photoURL;
+
+  return <div className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-stone-50 px-5 py-7 sm:px-8"><header><p className="text-xs font-bold uppercase tracking-wider text-emerald-700">Your profile</p><h1 className="mt-2 text-3xl font-extrabold tracking-tight text-stone-900">Show up as yourself.</h1></header><main className="my-auto space-y-5 py-7"><section className="rounded-3xl border border-stone-200 bg-white p-5 text-center shadow-sm"><div className="mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-[2rem] bg-emerald-100 text-3xl font-bold text-emerald-800">{photoURL ? <img src={photoURL} alt={name} referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : name.slice(0, 1).toUpperCase() || <UserRound className="h-8 w-8" />}</div><h2 className="mt-4 text-xl font-bold text-stone-900">{name}</h2><p className="mt-1 flex items-center justify-center gap-1 text-sm text-stone-500"><MapPin className="h-4 w-4 text-emerald-600" />{userProfile?.currentCity || 'Add your current city'}</p><p className="mt-4 text-sm leading-relaxed text-stone-600">{userProfile?.bio || 'Add a short bio so people know what kind of connection you are open to.'}</p><div className="mt-4 flex flex-wrap justify-center gap-2">{(userProfile?.interests || []).map((interest) => <span key={interest} className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">{interest}</span>)}</div></section><button type="button" onClick={() => onNavigate('/onboarding')} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700"><Edit3 className="h-4 w-4" />Edit profile and context</button><button type="button" onClick={() => void logout()} disabled={actionLoading === 'logout'} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-stone-600 transition hover:border-rose-200 hover:text-rose-700 disabled:opacity-60"><LogOut className="h-4 w-4" />{actionLoading === 'logout' ? 'Signing out...' : 'Sign out'}</button></main><footer className="pt-2"><PrimaryNav active="profile" onNavigate={onNavigate} /></footer></div>;
+};

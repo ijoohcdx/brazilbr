@@ -3,6 +3,7 @@ import { ChevronRight, Loader2, MessageCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { listConversations } from '../firebase/messages';
 import type { Conversation } from '../types';
+import { PrimaryNav } from './PrimaryNav';
 
 interface MessagesScreenProps {
   onOpenConversation: (conversation: Conversation) => void;
@@ -41,6 +42,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ onOpenConversati
       {loading && <div className="flex min-h-48 items-center justify-center text-emerald-700"><Loader2 className="h-6 w-6 animate-spin" /></div>}
       {!loading && !error && conversations.length === 0 && <div className="rounded-3xl border border-dashed border-stone-300 bg-white p-7 text-center"><MessageCircle className="mx-auto h-8 w-8 text-stone-400" /><h2 className="mt-3 font-bold text-stone-900">No conversations yet.</h2><p className="mt-2 text-sm leading-relaxed text-stone-600">Connect with someone from Discover to start a private conversation.</p></div>}
       {!loading && conversations.length > 0 && <div className="space-y-3">{conversations.map((conversation) => <button key={conversation.id} type="button" onClick={() => onOpenConversation(conversation)} className="flex w-full items-center gap-3 rounded-3xl border border-stone-200 bg-white p-4 text-left shadow-sm transition hover:border-emerald-300 hover:shadow-md"><div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 font-bold text-emerald-800">{otherParticipant(conversation, user?.uid || '').slice(0, 1).toUpperCase()}<span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-amber-400" /></div><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h2 className="truncate font-bold text-stone-900">Nomad {otherParticipant(conversation, user?.uid || '').slice(0, 8)}</h2><span className="text-[11px] text-stone-400">{conversation.lastMessageAt ? new Date(conversation.lastMessageAt).toLocaleDateString() : ''}</span></div><p className="mt-1 truncate text-sm text-stone-600">{conversation.lastMessage || 'Conversation started'}</p></div><ChevronRight className="h-4 w-4 shrink-0 text-stone-400" /></button>)}</div>}
+      <footer className="mt-7"><PrimaryNav active="messages" onNavigate={(path) => { window.history.pushState(null, '', path); window.dispatchEvent(new PopStateEvent('popstate')); }} /></footer>
     </div>
   );
 };
