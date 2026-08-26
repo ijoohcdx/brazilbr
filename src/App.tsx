@@ -1,60 +1,74 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { HomeScreen } from './components/HomeScreen';
+import { OnboardingScreen } from './components/OnboardingScreen';
 import { FirebaseSetupBanner } from './components/FirebaseSetupBanner';
 import { Loader2 } from 'lucide-react';
 
+const KNOWN_PATHS = new Set(['/','/home','/onboarding']);
+
 const MainApp: React.FC = () => {
-  const { user, loading } = useAuth();
-  
-  // Track simple path state synced with window.location
+  const { user, userProfile, loading, refreshProfile } = useAuth();
   const [currentPath, setCurrentPath] = useState<string>(() => {
-    return window.location.pathname === '/home' ? '/home' : '/';
+    const path = window.location.pathname;
+    return KNOWN_PATHS.has(path) ? path : '/';
   });
 
-  // Handle URL change events (browser back/forward or manual navigation)
+  const navigate = (path: string, replace = false) => {
+    if (replace) {
+      window.history.replaceState(null, '', path);
+    } else {
+      window.history.pushState(null, '', path);
+    }
+    setCurrentPath(path);
+  };
+
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentPath(window.location.pathname === '/home' ? '/home' : '/');
+      const path = window.location.pathname;
+      setCurrentPath(KNOWN_PATHS.has(path) ? path : '/');
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Protected route enforcement
   useEffect(() => {
     if (loading) return;
 
-    if (!user && currentPath === '/home') {
-      // Unauthenticated user trying to access /home -> redirect to /
-      window.history.replaceState(null, '', '/');
-      setCurrentPath('/');
-    } else if (user && currentPath === '/') {
-      // Authenticated user at / -> smoothly route to /home
-      window.history.replaceState(null, '', '/home');
-      setCurrentPath('/home');
+    if (!user) {
+      if (currentPath !== '/') navigate('/', true);
+      return;
     }
-  }, [user, loading, currentPath]);
 
-  // Loading Splash Screen while initializing Firebase auth state
+    if (!userProfile) return;
+
+    if (!userProfile.onboardingCompleted && currentPath !== '/onboarding') {
+      navigate('/onboarding', true);
+      return;
+    }
+
+    if (userProfile.onboardingCompleted && (currentPath === '/' || currentPath === '/onboarding')) {
+      navigate('/home', true);
+    }
+  }, [user, userProfile, loading, currentPath]);
+
+  const handleOnboardingComplete = async () => {
+    await refreshProfile();
+    navigate('/home', true);
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-stone-50 text-stone-800 p-6">
+      <div className="min-h-screen w-full bg-stone-50 p-6 text-stone-800 flex flex-col items-center justify-center">
         <div className="flex flex-col items-center space-y-4 animate-in fade-in duration-300">
-          <div className="h-14 w-14 rounded-2xl bg-emerald-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
-            BR
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-xl font-bold text-white shadow-md">BR</div>
+          <div className="space-y-1 text-center">
+            <h1 className="font-display text-xl font-extrabold uppercase tracking-tight text-stone-900">BrazilBR</h1>
+            <p className="text-xs font-medium text-stone-500">Your Nomadic Friend in Brazil</p>
           </div>
-          <div className="text-center space-y-1">
-            <h1 className="font-extrabold text-xl tracking-tight text-stone-900 uppercase font-display">
-              BrazilBR
-            </h1>
-            <p className="text-xs text-stone-500 font-medium">
-              Your Nomadic Friend in Brazil
-            </p>
-          </div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 pt-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
+          <div className="flex items-center gap-2 pt-2 text-xs font-semibold text-emerald-700">
+            <Loader2 className="h-4 w-4 animate-spin" />
             <span>Connecting...</span>
           </div>
         </div>
@@ -65,7 +79,9 @@ const MainApp: React.FC = () => {
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col justify-start">
       <FirebaseSetupBanner />
-      {user && currentPath === '/home' ? (
+      {user && currentPath === '/onboarding' ? (
+        <OnboardingScreen onComplete={handleOnboardingComplete} />
+      ) : user && currentPath === '/home' ? (
         <HomeScreen />
       ) : (
         <WelcomeScreen />

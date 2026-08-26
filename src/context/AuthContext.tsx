@@ -67,14 +67,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error('Failed to sync profile on auth state change:', profileErr);
             // Fallback profile representation if Firestore permissions or offline
             if (isMounted) {
+              const fallbackNow = new Date().toISOString();
               setUserProfile({
                 uid: firebaseUser.uid,
                 email: firebaseUser.email,
                 displayName: firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'Nomad'),
                 photoURL: firebaseUser.photoURL,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                lastLoginAt: new Date().toISOString(),
+                bio: '',
+                homeCountry: '',
+                currentCountry: 'Brazil',
+                currentCity: '',
+                languages: [],
+                interests: [],
+                travelStatus: null,
+                travelStyle: null,
+                onboardingCompleted: false,
+                createdAt: fallbackNow,
+                updatedAt: fallbackNow,
+                lastLoginAt: fallbackNow,
+                lastActiveAt: fallbackNow,
               });
             }
           }
@@ -177,9 +188,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!auth?.currentUser) return;
     try {
       const profile = await getUserProfile(auth.currentUser.uid);
-      if (profile) {
-        setUserProfile(profile);
-      }
+      setUserProfile(profile);
     } catch (err) {
       console.warn('Could not refresh profile:', err);
     }
