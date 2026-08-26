@@ -41,8 +41,10 @@ export async function getConversation(id: string): Promise<Conversation | null> 
 
 export async function listConversations(uid: string): Promise<Conversation[]> {
   try {
-    const snapshot = await getDocs(query(collection(requireFirebaseFirestore(), 'conversations'), where('participants', 'array-contains', uid), orderBy('lastMessageAt', 'desc')));
-    return snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as Conversation));
+    const snapshot = await getDocs(query(collection(requireFirebaseFirestore(), 'conversations'), where('participants', 'array-contains', uid)));
+    return snapshot.docs
+      .map((item) => ({ id: item.id, ...item.data() } as Conversation))
+      .sort((left, right) => right.lastMessageAt.localeCompare(left.lastMessageAt));
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, 'conversations');
   }
