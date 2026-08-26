@@ -13,7 +13,6 @@ export const FirebaseSetupBanner: React.FC = () => {
   const envSample = `VITE_FIREBASE_API_KEY="your-api-key"
 VITE_FIREBASE_AUTH_DOMAIN="your-project.firebaseapp.com"
 VITE_FIREBASE_PROJECT_ID="your-project-id"
-VITE_FIREBASE_STORAGE_BUCKET="your-project.appspot.com"
 VITE_FIREBASE_MESSAGING_SENDER_ID="your-sender-id"
 VITE_FIREBASE_APP_ID="your-app-id"`;
 
@@ -74,7 +73,7 @@ VITE_FIREBASE_APP_ID="your-app-id"`;
             </div>
             <ul className="space-y-1 text-[11px] text-amber-900 list-disc list-inside">
               <li>Enable <strong>Google</strong> &amp; <strong>Email/Password</strong> in Firebase Console.</li>
-              <li>Create a <strong>Cloud Firestore</strong> database.</li>
+              <li>Create a <strong>Cloud Firestore</strong> database. Firebase Storage is not required for the MVP.</li>
             </ul>
           </div>
         )}

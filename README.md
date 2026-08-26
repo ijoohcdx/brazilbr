@@ -1,20 +1,29 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# BrazilBR
 
-# Run and deploy your AI Studio app
+Aplicativo comunitário para pessoas viajando, morando ou trabalhando no Brasil.
 
-This contains everything you need to run your app locally.
+## Executar localmente
 
-View your app in AI Studio: https://ai.studio/apps/4663779b-6b06-483c-aa7d-4707cb825511
+**Pré-requisito:** Bun 1.2.20 ou compatível.
 
-## Run Locally
+1. Instale as dependências com `bun install`.
+2. Copie `.env.example` para `.env.local`.
+3. Preencha as variáveis `VITE_FIREBASE_*` do projeto Firebase utilizado pelo ambiente.
+4. No Firebase Console, habilite somente os provedores de Authentication necessários e o Cloud Firestore.
+5. Execute `bun run dev`.
 
-**Prerequisites:**  Node.js
+## Build de produção
 
+Use `bun run lint` para validar TypeScript e `bun run build` para gerar o bundle de produção. O projeto é uma SPA estática e o fallback de rotas é configurado em `vercel.json`.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Arquitetura do MVP
+
+O frontend usa React, Vite e TypeScript. Authentication e Cloud Firestore são acessados pelo SDK cliente e protegidos por `firestore.rules`. O MVP não usa Firebase Storage, upload de arquivos nem API própria. As contribuições de mídia armazenam apenas referências públicas HTTP/HTTPS fornecidas pelo usuário; a disponibilidade e a permanência desses links dependem do serviço externo.
+
+## Variáveis e segurança
+
+As variáveis `VITE_FIREBASE_*` são configurações públicas do cliente Firebase, não substituem as Security Rules. Nunca coloque senhas, tokens privados ou credenciais administrativas no bundle. Antes de publicar, valide Auth, regras Firestore e isolamento entre contas de teste.
+
+## Deploy
+
+A Vercel deve usar o lockfile `bun.lock` e a versão declarada em `package.json`. Não habilite Firebase Storage, billing ou outros serviços pagos como parte do deploy do MVP.

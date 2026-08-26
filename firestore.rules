@@ -165,9 +165,8 @@ service cloud.firestore {
           request.resource.data.text is string &&
           request.resource.data.text.size() > 0 &&
           request.resource.data.text.size() <= 2000;
-        allow update: if isParticipant(get(/databases/$(database)/documents/conversations/$(conversationId)).data) &&
-          request.resource.data.senderId == resource.data.senderId &&
-          request.resource.data.conversationId == resource.data.conversationId;
+        // Messages are immutable in the current client; deny arbitrary participant edits.
+        allow update: if false;
         allow delete: if false;
       }
     }
