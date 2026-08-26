@@ -56,6 +56,24 @@ export interface Connection {
   updatedAt: string;
 }
 
+export interface Conversation {
+  id: string;
+  participants: [string, string];
+  createdAt: string;
+  updatedAt: string;
+  lastMessage: string;
+  lastMessageAt: string;
+}
+
+export interface Message {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  text: string;
+  createdAt: string;
+  readAt: string | null;
+}
+
 export type AuthMode = 'welcome' | 'email-signin' | 'email-signup';
 
 export enum OperationType {

@@ -5,10 +5,12 @@ import { HomeScreen } from './components/HomeScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { DiscoverScreen } from './components/DiscoverScreen';
 import { ProfileScreen } from './components/ProfileScreen';
+import { MessagesScreen } from './components/MessagesScreen';
+import { ConversationScreen } from './components/ConversationScreen';
 import { FirebaseSetupBanner } from './components/FirebaseSetupBanner';
 import { Loader2 } from 'lucide-react';
 
-const KNOWN_PATHS = new Set(['/','/home','/onboarding','/discover','/profile']);
+const KNOWN_PATHS = new Set(['/','/home','/onboarding','/discover','/profile','/messages','/conversation']);
 
 const pathnameFrom = (path: string) => new URL(path, window.location.origin).pathname;
 
@@ -58,6 +60,7 @@ const MainApp: React.FC = () => {
   }, [user, userProfile, loading, currentPath]);
 
   const profileUid = new URLSearchParams(window.location.search).get('uid');
+  const activeConversationId = new URLSearchParams(window.location.search).get('id');
 
   const handleOnboardingComplete = async () => {
     await refreshProfile();
@@ -90,7 +93,11 @@ const MainApp: React.FC = () => {
       ) : user && currentPath === '/discover' ? (
         <DiscoverScreen onOpenProfile={(uid) => navigate(`/profile?uid=${encodeURIComponent(uid)}`)} />
       ) : user && currentPath === '/profile' && profileUid ? (
-        <ProfileScreen uid={profileUid} onBack={() => navigate('/discover')} />
+        <ProfileScreen uid={profileUid} onBack={() => navigate('/discover')} onOpenConversation={(conversationId) => navigate(`/conversation?id=${encodeURIComponent(conversationId)}`)} />
+      ) : user && currentPath === '/messages' ? (
+        <MessagesScreen onOpenConversation={(conversation) => navigate(`/conversation?id=${encodeURIComponent(conversation.id)}`)} />
+      ) : user && currentPath === '/conversation' && activeConversationId ? (
+        <ConversationScreen conversationId={activeConversationId} onBack={() => navigate('/messages')} />
       ) : user && currentPath === '/home' ? (
         <HomeScreen onNavigate={navigate} />
       ) : (
