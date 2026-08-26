@@ -15,12 +15,14 @@ import { requireFirebaseFirestore } from './config';
 import { handleFirestoreError } from './userProfile';
 import { OperationType, type Post, type PostComment, type PostReaction, type PostVisibility } from '../types';
 import { createNotification } from './notifications';
+import { deleteMedia } from './media';
+import type { MediaReference } from '../types';
 
 export async function listFeedPosts(): Promise<Post[]> {
   try {
     const snapshot = await getDocs(query(collection(requireFirebaseFirestore(), 'posts'), where('visibility', '==', 'public'), limit(30)));
     return snapshot.docs
-      .map((item) => ({ id: item.id, ...item.data() } as Post))
+      .map((item) => ({ id: item.id, media: [], ...item.data() } as Post))
       .filter((post) => post.visibility !== 'friends')
       .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
   } catch (error) {
@@ -32,7 +34,7 @@ export async function listPostsByAuthor(authorId: string): Promise<Post[]> {
   try {
     const snapshot = await getDocs(query(collection(requireFirebaseFirestore(), 'posts'), where('authorId', '==', authorId), limit(50)));
     return snapshot.docs
-      .map((item) => ({ id: item.id, ...item.data() } as Post))
+      .map((item) => ({ id: item.id, media: [], ...item.data() } as Post))
       .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, `posts?authorId=${authorId}`);
@@ -47,6 +49,7 @@ export async function createPost(
   city: string,
   visibility: PostVisibility = 'public',
   linkUrl: string | null = null,
+  media: MediaReference[] = [],
 ): Promise<Post> {
   const cleanContent = content.trim();
   if (!cleanContent) throw new Error('Post content cannot be empty.');
@@ -63,6 +66,7 @@ export async function createPost(
     city: city.trim(),
     linkUrl: linkUrl?.trim() || null,
     mediaUrl: null,
+    media,
     visibility,
     reactionCount: 0,
     commentCount: 0,
@@ -145,5 +149,27 @@ export async function addPostComment(postId: string, authorId: string, authorNam
     return comment;
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, `comments/${comment.id}`);
+  }
+}
+
+export async function attachPostMedia(postId: string, media: MediaReference[]): Promise<void> {
+  if (media.length === 0) return;
+  try {
+    await updateDoc(doc(requireFirebaseFirestore(), 'posts', postId), { media, updatedAt: new Date().toISOString() });
+  } catch (error) {
+    await Promise.allSettled(media.map((item) => deleteMedia(item)));
+    handleFirestoreError(error, OperationType.UPDATE, `posts/${postId}/media`);
+  }
+}
+
+export async function removePostMedia(post: Post, mediaId: string): Promise<void> {
+  const media = (post.media || []).filter((item) => item.id !== mediaId);
+  const removed = (post.media || []).find((item) => item.id === mediaId);
+  if (!removed) return;
+  try {
+    await deleteMedia(removed);
+    await updateDoc(doc(requireFirebaseFirestore(), 'posts', post.id), { media, updatedAt: new Date().toISOString() });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `posts/${post.id}/media`);
   }
 }

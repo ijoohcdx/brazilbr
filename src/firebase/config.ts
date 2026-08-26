@@ -4,6 +4,7 @@
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
@@ -32,12 +33,14 @@ const hasFirebaseConfig = requiredFirebaseConfigValues.every(hasUsableValue);
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
+let storage: FirebaseStorage | null = null;
 
 if (hasFirebaseConfig) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
     db = getFirestore(app);
+    storage = getStorage(app);
   } catch (error) {
     console.error(
       'Firebase initialization failed. Check the VITE_FIREBASE_* environment variables.',
@@ -70,9 +73,18 @@ export function requireFirebaseFirestore(): Firestore {
   return db;
 }
 
+export function requireFirebaseStorage(): FirebaseStorage {
+  if (!storage) {
+    const error = new Error('Firebase Storage is not configured. Enable Storage in the Firebase Console.') as Error & { code: string };
+    error.code = 'storage/configuration-not-found';
+    throw error;
+  }
+  return storage;
+}
+
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account',
 });
 
-export { app, auth, db, firebaseConfig, googleProvider };
+export { app, auth, db, storage, firebaseConfig, googleProvider };

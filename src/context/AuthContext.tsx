@@ -188,7 +188,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...data,
       uid: user.uid,
       email: user.email ?? currentProfile?.email ?? null,
-      photoURL: user.photoURL ?? currentProfile?.photoURL ?? null,
+      photoURL: data.photoURL ?? currentProfile?.photoURL ?? user.photoURL ?? null,
       onboardingCompleted: true,
       updatedAt: now,
       lastActiveAt: now,

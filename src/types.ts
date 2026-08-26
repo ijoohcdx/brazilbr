@@ -8,6 +8,7 @@ export interface UserProfile {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
+  profileMediaPath?: string;
   bio: string;
   homeCountry: string;
   currentCountry: string;
@@ -103,6 +104,7 @@ export interface Post {
   city: string;
   linkUrl: string | null;
   mediaUrl: string | null;
+  media?: MediaReference[];
   placeId?: string | null;
   visibility: PostVisibility;
   reactionCount: number;
@@ -139,6 +141,24 @@ export interface UserNotification {
   read: boolean;
   createdAt: string;
 }
+
+export type MediaKind = 'image' | 'video';
+export type MediaOwner = 'profile' | 'post' | 'contribution' | 'place';
+
+export interface MediaReference {
+  id: string;
+  path: string;
+  downloadURL: string;
+  contentType: string;
+  kind: MediaKind;
+  size: number;
+  authorId: string;
+  owner: MediaOwner;
+  associatedId?: string;
+  createdAt: string;
+}
+
+export type MediaEntry = MediaReference | string;
 
 export const CONTRIBUTION_TYPES = [
   'place',
@@ -196,7 +216,7 @@ export interface Place {
   roomTypes: string;
   amenities: string[];
   services: string[];
-  media: string[];
+  media: MediaEntry[];
   wifiAvailable: boolean | null;
   breakfast: boolean | null;
   checkIn: string;
@@ -219,7 +239,7 @@ export interface PlaceContribution {
   authorId: string;
   kind: 'recommendation' | 'correction' | 'photo' | 'menu' | 'tip' | 'wifi' | 'review';
   text: string;
-  media: string[];
+  media: MediaEntry[];
   metadata: Record<string, string>;
   createdAt: string;
 }
@@ -233,7 +253,7 @@ export interface Contribution {
   location: string;
   city: string;
   country: string;
-  media: string[];
+  media: MediaEntry[];
   links: string[];
   metadata: Record<string, string>;
   placeId?: string | null;
