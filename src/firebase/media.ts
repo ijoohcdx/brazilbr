@@ -45,14 +45,16 @@ const referenceId = () => {
 export function createExternalMediaReference(value: string, contributorId: string, type?: MediaKind, caption?: string): MediaReference {
   const validation = validateExternalURL(value);
   if (!validation.ok || !validation.value) throw new Error(validation.message || 'The external URL is invalid.');
-  return {
+  const reference: MediaReference = {
     id: referenceId(),
     externalUrl: validation.value,
     type: type || inferExternalMediaKind(validation.value),
-    caption: caption?.trim() || undefined,
     contributorId,
     createdAt: new Date().toISOString(),
   };
+  const cleanCaption = caption?.trim();
+  if (cleanCaption) reference.caption = cleanCaption;
+  return reference;
 }
 
 export function mediaURL(entry: MediaEntry): string {
