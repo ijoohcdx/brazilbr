@@ -95,7 +95,7 @@ async function main() {
     const body = renderToStaticMarkup(<SeoLandingPage config={config} />);
     const html = stripTemplateSeo(template)
       .replace(/<html lang="[^"]*">/, '<html lang="en">')
-      .replace('</head>', `    ${buildHead(config, canonicalUrl)}\\n  </head>`)
+      .replace('</head>', `    ${buildHead(config, canonicalUrl)}\n  </head>`)
       .replace('<div id="root"></div>', `<div id="root">${body}</div>`);
     const outputDir = config.path === '/' ? distDir : path.join(distDir, config.path.slice(1));
     await mkdir(outputDir, { recursive: true });
