@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Disallow: /home
+Disallow: /onboarding
+Disallow: /map
+Disallow: /place
+Disallow: /discover
+Disallow: /profile
+Disallow: /messages
+Disallow: /conversation
+Disallow: /groups
+Disallow: /search
+Disallow: /contribute
+Disallow: /notifications
+Disallow: /friends
+
+Sitemap: https://brazilbr-zeta.vercel.app/sitemap.xml

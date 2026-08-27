@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WelcomeScreen } from './components/WelcomeScreen';
+import { SeoHead } from './components/SeoHead';
+import { SeoLandingPage } from './components/SeoLandingPage';
+import { getSeoConfig, PUBLIC_SEO_PATHS } from './seo';
 import { HomeScreen } from './components/HomeScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { DiscoverScreen } from './components/DiscoverScreen';
@@ -18,7 +21,7 @@ import { PlaceProfileScreen } from './components/PlaceProfileScreen';
 import { FirebaseSetupBanner } from './components/FirebaseSetupBanner';
 import { Loader2 } from 'lucide-react';
 
-const KNOWN_PATHS = new Set(['/','/home','/onboarding','/map','/place','/discover','/profile','/messages','/conversation','/groups','/search','/contribute','/notifications','/friends']);
+const KNOWN_PATHS = new Set([...PUBLIC_SEO_PATHS, '/home','/onboarding','/map','/place','/discover','/profile','/messages','/conversation','/groups','/search','/contribute','/notifications','/friends']);
 
 const pathnameFrom = (path: string) => new URL(path, window.location.origin).pathname;
 
@@ -50,6 +53,8 @@ const MainApp: React.FC = () => {
   useEffect(() => {
     if (loading) return;
 
+    if (PUBLIC_SEO_PATHS.has(currentPath) && currentPath !== '/') return;
+
     if (!user) {
       if (currentPath !== '/') navigate('/', true);
       return;
@@ -75,6 +80,10 @@ const MainApp: React.FC = () => {
     navigate('/home', true);
   };
 
+  if (PUBLIC_SEO_PATHS.has(currentPath) && currentPath !== '/') {
+    return <SeoLandingPage config={getSeoConfig(currentPath)} />;
+  }
+
     if (loading || (user && profileLoading)) {
       return (
       <div className="min-h-screen w-full bg-stone-50 p-6 text-stone-800 flex flex-col items-center justify-center">
@@ -95,6 +104,7 @@ const MainApp: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col justify-start">
+      <SeoHead path={currentPath} noindex={!PUBLIC_SEO_PATHS.has(currentPath)} />
       <FirebaseSetupBanner />
       {user && currentPath === '/onboarding' ? (
         <OnboardingScreen onComplete={handleOnboardingComplete} />
