@@ -1,23 +1,29 @@
-# BrazilBR — pacote completo para deploy manual
+# Deploy manual — legado e contingência
 
-Este pacote contém o código-fonte completo, o build de produção já validado, `vercel.json`, `firebase.json`, `.env.example` e `firestore.rules`.
+Este arquivo permanece por compatibilidade com referências antigas. O fluxo normal do BrazilBR é **GitHub `main` → Vercel**, com build automático de `bun run build` e output `dist/`. Não faça upload manual de `dist/` como procedimento padrão.
 
-## Deploy no Vercel
+Para o procedimento operacional atual, consulte [`docs/OPERATIONS.md`](./docs/OPERATIONS.md), especialmente as seções de configuração Vercel, deploy pelo GitHub, deploy manual de contingência, publicação de Firestore Rules, rollback e recuperação.
 
-Use o diretório raiz deste pacote (`brazilbr-complete-deploy`) para importar o projeto ou fazer upload manual. Se a plataforma pedir configurações, use: framework Vite ou Other; build command `bun run build`; output directory `dist`; install command `bun install --frozen-lockfile`.
+## Contingência do frontend
 
-Para um upload somente do build, use o conteúdo da pasta `dist`; mantenha o `vercel.json` junto se a plataforma aceitar configuração de fallback SPA. As rotas internas devem encaminhar para `index.html`.
+Se a integração GitHub–Vercel estiver indisponível, um mantenedor autorizado pode importar o repositório no Vercel ou usar a CLI autenticada:
 
-## Firebase e segurança
+```bash
+bun install --frozen-lockfile
+bun run lint
+bun run build
+vercel --prod
+```
 
-A aplicação usa somente Firebase Authentication e Cloud Firestore no caminho auditado. Não habilite Firebase Storage, billing, Functions pagas ou qualquer outro serviço pago. As variáveis `VITE_FIREBASE_*` são configurações públicas do cliente; não coloque segredos no bundle.
+As variáveis `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_MESSAGING_SENDER_ID` e `VITE_FIREBASE_APP_ID` devem estar configuradas no ambiente de build. Não coloque `.env.local` no repositório e não imprima os valores.
 
-O arquivo `firestore.rules` inclui a correção que torna mensagens imutáveis, pois a UI atual não oferece edição de mensagens. Publique essas regras separadamente somente em um projeto Firebase já autorizado, após revisão.
+## Firestore Rules
 
-## Validação realizada
+O deploy do Vercel não publica Rules. Depois de revisar/testar [`firestore.rules`](./firestore.rules), um administrador Firebase pode executar:
 
-O pacote foi gerado após instalação congelada com Bun, `bun run lint` e `bun run build`. O build passou; permanece apenas o alerta conhecido de bundle JavaScript acima de 500 kB. O build incluído em `dist` foi produzido com a configuração pública Firebase do ambiente atual.
+```bash
+firebase login
+firebase deploy --only firestore:rules --project brazilbr-e5576
+```
 
-## Pendências conhecidas
-
-QA anterior registrou indisponibilidade em Mapa, Discover e Messages no ambiente público, além de riscos de negócio ainda abertos em notificações, autoria declarada, comentários, reações, lugares e ausência de testes automatizados de regras. Essas pendências não são resolvidas pelo upload estático.
+Não crie Storage Rules, bucket ou upload: Firebase Storage não faz parte do runtime do MVP. O rollback de frontend não reverte dados ou Rules; siga o runbook atual.
