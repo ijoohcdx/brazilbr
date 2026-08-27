@@ -96,7 +96,7 @@ export const WelcomeScreen: React.FC = () => {
     setLocalError(null);
   };
 
-  const openStart = (nextMode: AuthMode = 'email-signup') => {
+  const openStart = (nextMode: AuthMode = 'welcome') => {
     clearAuthErrors();
     setMode(nextMode);
     window.requestAnimationFrame(() => {
