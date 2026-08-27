@@ -19,6 +19,7 @@ export async function getConnection(firstUid: string, secondUid: string): Promis
 }
 
 export async function createConnection(initiatedBy: string, targetUid: string): Promise<Connection> {
+  if (!initiatedBy || !targetUid || initiatedBy === targetUid) throw new Error('A connection needs two different people.');
   const id = connectionId(initiatedBy, targetUid);
   const now = new Date().toISOString();
   const connection: Connection = {
@@ -53,6 +54,9 @@ export async function updateConnectionStatus(
   actorUid: string,
   status: Extract<ConnectionStatus, 'accepted' | 'declined' | 'blocked'>
 ): Promise<void> {
+  if (connection.initiatedBy === actorUid && status !== 'blocked') {
+    throw new Error('Only the recipient can accept or decline a connection request.');
+  }
   if (!connection.users.includes(actorUid)) {
     throw new Error('You cannot update this connection.');
   }

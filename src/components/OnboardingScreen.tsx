@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, MapPin, MapPinned, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { saveUserContext, saveUserProfile } from '../firebase/userProfile';
+import { saveOnboardingProfile } from '../firebase/userProfile';
 import { USER_NEEDS } from '../types';
 
 const LANGUAGES = ['Português', 'English', 'Español', 'Français', 'Italiano', 'Deutsch'];
@@ -64,8 +64,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
         travelStyle: travelStyle || null,
         onboardingCompleted: true as const,
       };
-      await saveUserProfile(user.uid, profileData);
-      await saveUserContext(user.uid, currentNeed, currentCity.trim());
+      await saveOnboardingProfile(user.uid, profileData, currentNeed, currentCity.trim());
       completeOnboarding(profileData);
       onComplete();
     } catch (saveError) {

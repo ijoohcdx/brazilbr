@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, getDoc, getDocs, limit, orderBy, query, setDoc, updateDoc, where } from '@firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, limit, orderBy, query, setDoc, updateDoc, where, writeBatch } from '@firebase/firestore';
 import { requireFirebaseFirestore } from './config';
 import { handleFirestoreError } from './userProfile';
 import { OperationType, type Conversation, type Message } from '../types';
@@ -9,6 +9,7 @@ export function conversationId(firstUid: string, secondUid: string): string {
 }
 
 export async function getOrCreateConversation(firstUid: string, secondUid: string): Promise<Conversation> {
+  if (!firstUid || !secondUid || firstUid === secondUid) throw new Error('A conversation needs two different people.');
   const id = conversationId(firstUid, secondUid);
   const conversationRef = doc(requireFirebaseFirestore(), 'conversations', id);
   try {
@@ -75,12 +76,16 @@ export async function sendMessage(conversation: Conversation, senderId: string, 
   };
 
   try {
-    const messageRef = await addDoc(collection(requireFirebaseFirestore(), 'conversations', conversation.id, 'messages'), messageData);
-    await updateDoc(doc(requireFirebaseFirestore(), 'conversations', conversation.id), {
+    const firestore = requireFirebaseFirestore();
+    const messageRef = doc(collection(firestore, 'conversations', conversation.id, 'messages'));
+    const batch = writeBatch(firestore);
+    batch.set(messageRef, messageData);
+    batch.update(doc(firestore, 'conversations', conversation.id), {
       lastMessage: cleanText,
       lastMessageAt: now,
       updatedAt: now,
     });
+    await batch.commit();
     const recipientId = conversation.participants.find((uid) => uid !== senderId);
     if (recipientId) void createNotification({ recipientId, actorId: senderId, type: 'message', entityId: conversation.id, text: 'sent you a new message.' }).catch((notificationError) => console.warn('Could not create message notification:', notificationError));
     return { id: messageRef.id, ...messageData };

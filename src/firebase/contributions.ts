@@ -16,7 +16,7 @@ export async function listContributions(): Promise<Contribution[]> {
 
 export async function listContributionsByAuthor(authorId: string): Promise<Contribution[]> {
   try {
-    const snapshot = await getDocs(query(collection(requireFirebaseFirestore(), 'contributions'), where('status', '==', 'published'), limit(50)));
+    const snapshot = await getDocs(query(collection(requireFirebaseFirestore(), 'contributions'), where('authorId', '==', authorId), where('status', '==', 'published'), limit(50)));
     return snapshot.docs
       .map((item) => ({ id: item.id, media: [], ...item.data() } as Contribution))
       .filter((contribution) => contribution.authorId === authorId)

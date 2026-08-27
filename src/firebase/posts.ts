@@ -9,6 +9,7 @@ import {
   query,
   setDoc,
   updateDoc,
+  writeBatch,
   where,
 } from '@firebase/firestore';
 import { requireFirebaseFirestore } from './config';
@@ -140,10 +141,14 @@ export async function addPostComment(postId: string, authorId: string, authorNam
   };
 
   try {
-    const postSnapshot = await getDoc(doc(firestore, 'posts', postId));
-    await setDoc(commentRef, comment);
-    await updateDoc(doc(firestore, 'posts', postId), { commentCount: increment(1), updatedAt: new Date().toISOString() });
-    const postAuthorId = postSnapshot.exists() ? String(postSnapshot.data().authorId || '') : '';
+    const postRef = doc(firestore, 'posts', postId);
+    const postSnapshot = await getDoc(postRef);
+    if (!postSnapshot.exists()) throw new Error('This post is no longer available.');
+    const batch = writeBatch(firestore);
+    batch.set(commentRef, comment);
+    batch.update(postRef, { commentCount: increment(1), updatedAt: new Date().toISOString() });
+    await batch.commit();
+    const postAuthorId = String(postSnapshot.data().authorId || '');
     if (postAuthorId && postAuthorId !== authorId) void createNotification({ recipientId: postAuthorId, actorId: authorId, type: 'comment', entityId: postId, text: 'commented on your post.' }).catch((notificationError) => console.warn('Could not create comment notification:', notificationError));
     return comment;
   } catch (error) {

@@ -26,6 +26,13 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ uid, onBack, onOpe
 
   const load = async () => {
     if (!user) return;
+    if (uid === user.uid) {
+      setProfile(null);
+      setConnection(null);
+      setError('This is your profile. Open My Profile instead.');
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -59,7 +66,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ uid, onBack, onOpe
   };
 
   const connectionAction = () => {
-    if (!user || !connection) {
+    if (!user || uid === user.uid) return;
+    if (!connection) {
       if (user) void runConnectionAction(async () => { await createConnection(user.uid, uid); });
       return;
     }
@@ -84,7 +92,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ uid, onBack, onOpe
   };
 
   const openConversation = async () => {
-    if (!user || !connection || connection.status !== 'accepted') return;
+    if (!user || uid === user.uid || !connection || connection.status !== 'accepted') return;
     setActionLoading(true);
     setError(null);
     try {
@@ -99,7 +107,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ uid, onBack, onOpe
   };
 
   const block = async () => {
-    if (!user || !window.confirm('Block this person? They will no longer appear in discovery or start communication with you.')) return;
+    if (!user || uid === user.uid || !window.confirm('Block this person? They will no longer appear in discovery or start communication with you.')) return;
     setActionLoading(true);
     setError(null);
     try {
@@ -116,7 +124,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ uid, onBack, onOpe
 
   const submitReport = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!user || !reportReason.trim()) return;
+    if (!user || uid === user.uid || !reportReason.trim()) return;
     setActionLoading(true);
     setError(null);
     try {

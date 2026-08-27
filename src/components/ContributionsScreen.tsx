@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ExternalLink, FilePlus2, Link2, Loader2, MapPin, Plus, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { createContribution, deleteContribution, listContributions } from '../firebase/contributions';
-import { createPlace } from '../firebase/places';
+import { createPlaceAndContribution } from '../firebase/publishing';
 import { createExternalMediaReference, mediaURL, normalizeExternalURL, validateExternalURL } from '../firebase/media';
 import { ExternalMediaPreview } from './ExternalMediaPreview';
 import { CONTRIBUTION_TYPES, type Contribution, type ContributionType, type MediaEntry, type PlaceCategory } from '../types';
@@ -51,11 +51,18 @@ export const ContributionsScreen: React.FC<ContributionsScreenProps> = ({ onBack
       if (link.trim() && !normalizedLink) throw new Error('Enter a valid http:// or https:// link.');
       const media = externalMediaURL.trim() ? [createExternalMediaReference(externalMediaURL, user.uid)] : [];
       let placeId: string | null = null;
+      let contribution: Contribution;
       if (createPlaceProfile && canCreatePlace) {
-        const place = await createPlace({ name: title, category: placeCategoryForType(type), description, city, country: userProfile?.currentCountry || 'Brazil', address: location, mapsUrl: normalizedLink && /maps|goo\.gl/i.test(normalizedLink) ? normalizedLink : '', media, createdBy: user.uid });
-        placeId = place.id; setLastCreatedPlaceId(place.id);
+        const result = await createPlaceAndContribution({
+          place: { name: title, category: placeCategoryForType(type), description, city, country: userProfile?.currentCountry || 'Brazil', address: location, mapsUrl: normalizedLink && /maps|goo\.gl/i.test(normalizedLink) ? normalizedLink : '', media, createdBy: user.uid },
+          contribution: { authorId: user.uid, type, title, description, location, city, country: userProfile?.currentCountry || 'Brazil', media, links: normalizedLink ? [normalizedLink] : [], metadata: metadata.trim() ? { details: metadata.trim() } : {} },
+        });
+        placeId = result.place.id;
+        contribution = result.contribution;
+        setLastCreatedPlaceId(placeId);
+      } else {
+        contribution = await createContribution({ authorId: user.uid, type, title, description, location, city, country: userProfile?.currentCountry || 'Brazil', media, links: normalizedLink ? [normalizedLink] : [], metadata: metadata.trim() ? { details: metadata.trim() } : {}, placeId });
       }
-      const contribution = await createContribution({ authorId: user.uid, type, title, description, location, city, country: userProfile?.currentCountry || 'Brazil', media, links: normalizedLink ? [normalizedLink] : [], metadata: metadata.trim() ? { details: metadata.trim() } : {}, placeId });
       setContributions((current) => [contribution, ...current]);
       setTitle(''); setDescription(''); setLocation(''); setLink(''); setExternalMediaURL(''); setMetadata('');
       setSuccess(placeId ? 'Place Profile and contribution created successfully.' : 'Contribution published successfully.');

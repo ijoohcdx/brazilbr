@@ -5,6 +5,7 @@ import { OperationType, type Connection, type UserReport } from '../types';
 import { connectionId } from './connections';
 
 export async function reportUser(reporterId: string, reportedUserId: string, reason: string): Promise<UserReport> {
+  if (!reporterId || !reportedUserId || reporterId === reportedUserId) throw new Error('You cannot report yourself.');
   const cleanReason = reason.trim();
   if (!cleanReason) throw new Error('Please provide a reason for the report.');
   const reportData = {
@@ -23,6 +24,7 @@ export async function reportUser(reporterId: string, reportedUserId: string, rea
 }
 
 export async function blockUser(blockerId: string, blockedUserId: string): Promise<Connection> {
+  if (!blockerId || !blockedUserId || blockerId === blockedUserId) throw new Error('You cannot block yourself.');
   const id = connectionId(blockerId, blockedUserId);
   const now = new Date().toISOString();
   const blockedConnection: Connection = {

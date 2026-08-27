@@ -140,16 +140,33 @@ export async function saveUserProfile(
   const path = `users/${uid}`;
   const now = new Date().toISOString();
   try {
-    await withFirestoreTimeout(
-      setDoc(doc(requireFirebaseFirestore(), 'users', uid), { uid, ...data, updatedAt: now, lastActiveAt: now }, { merge: true }),
-      'Saving your private profile',
-    );
-    await withFirestoreTimeout(
-      setDoc(doc(requireFirebaseFirestore(), 'publicProfiles', uid), publicProfileData({ uid, ...data, updatedAt: now }), { merge: true }),
-      'Saving your public profile',
-    );
+    const firestore = requireFirebaseFirestore();
+    const batch = writeBatch(firestore);
+    batch.set(doc(firestore, 'users', uid), { uid, ...data, updatedAt: now, lastActiveAt: now }, { merge: true });
+    batch.set(doc(firestore, 'publicProfiles', uid), publicProfileData({ uid, ...data, updatedAt: now }), { merge: true });
+    await withFirestoreTimeout(batch.commit(), 'Saving your profile');
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
+/** Saves the three onboarding documents atomically so a partial Firestore failure cannot leave onboarding inconsistent. */
+export async function saveOnboardingProfile(
+  uid: string,
+  data: Partial<Pick<UserProfile, 'displayName' | 'bio' | 'homeCountry' | 'currentCountry' | 'currentCity' | 'languages' | 'interests' | 'travelStatus' | 'travelStyle' | 'onboardingCompleted' | 'showOnMap'>>,
+  currentNeed: string,
+  currentCity: string,
+): Promise<void> {
+  const now = new Date().toISOString();
+  try {
+    const firestore = requireFirebaseFirestore();
+    const batch = writeBatch(firestore);
+    batch.set(doc(firestore, 'users', uid), { uid, ...data, updatedAt: now, lastActiveAt: now }, { merge: true });
+    batch.set(doc(firestore, 'publicProfiles', uid), publicProfileData({ uid, ...data, updatedAt: now }), { merge: true });
+    batch.set(doc(firestore, 'userContext', uid), { uid, currentNeed, currentCity, updatedAt: now }, { merge: true });
+    await withFirestoreTimeout(batch.commit(), 'Saving your BrazilBR profile');
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `users/${uid}/onboarding`);
   }
 }
 

@@ -140,18 +140,26 @@ service cloud.firestore {
       allow create: if isSignedIn() &&
         isConnectionParticipant(request.resource.data) &&
         request.resource.data.users.size() == 2 &&
+        request.resource.data.users[0] != request.resource.data.users[1] &&
         request.resource.data.initiatedBy == request.auth.uid &&
         (request.resource.data.status == 'pending' || request.resource.data.status == 'blocked');
       allow update: if isConnectionParticipant(resource.data) &&
         isConnectionParticipant(request.resource.data) &&
         request.resource.data.users == resource.data.users &&
-        request.resource.data.status in ['pending', 'accepted', 'declined', 'blocked'];
+        request.resource.data.initiatedBy == resource.data.initiatedBy &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.updatedAt is string &&
+        request.resource.data.status in ['accepted', 'declined', 'blocked'] &&
+        (request.resource.data.status == 'blocked' ||
+          (resource.data.status == 'pending' && resource.data.initiatedBy != request.auth.uid));
       allow delete: if isConnectionParticipant(resource.data);
     }
 
     match /conversations/{conversationId} {
       allow get, list: if isParticipant(resource.data);
-      allow create: if isParticipant(request.resource.data) && request.resource.data.participants.size() == 2;
+      allow create: if isParticipant(request.resource.data) &&
+        request.resource.data.participants.size() == 2 &&
+        request.resource.data.participants[0] != request.resource.data.participants[1];
       allow update: if isParticipant(resource.data) &&
         isParticipant(request.resource.data) &&
         request.resource.data.participants == resource.data.participants;
