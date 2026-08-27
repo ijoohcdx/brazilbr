@@ -4,6 +4,12 @@ Aplicativo comunitário para pessoas viajando, morando, trabalhando ou se estabe
 
 > **Objetivo deste repositório:** permitir que outro desenvolvedor clone, execute, valide, publique, faça rollback e recupere o BrazilBR sem depender do Manus.
 
+## Kalipeiro Product Factory
+
+Este repositório também contém a **Kalipeiro Product Factory**, um sistema documental e executável para repetir o processo de ideia → pesquisa → validação → produto → arquitetura → desenvolvimento → QA → segurança → deploy → conversão → SEO → aquisição → monetização → analytics → iteração. Ela foi extraída das experiências reais do BrazilBR e não é uma feature do produto.
+
+Comece em [`product-factory/README.md`](./product-factory/README.md). O sistema inclui pipeline e gates, 15 prompts de agentes (incluindo Idea Agent), Master Orchestrator, templates, checklists, playbooks, score de prontidão, manifestos e ADRs. A Factory não altera automaticamente o runtime, não ativa cobrança, não publica infraestrutura e não executa ações destrutivas sem decisão humana.
+
 ## Estado atual e links
 
 | Recurso | Local |

@@ -1,0 +1,12 @@
+product: ""
+workspace: ""
+current_stage: "00-idea"
+status: "DRAFT"
+last_artifact: ""
+last_commit: ""
+owner: ""
+next_agent: "00-idea-agent"
+decision: "HUMAN-REVIEW"
+open_risks: []
+required_human_actions: []
+updated_at: ""
